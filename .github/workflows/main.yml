@@ -1,4 +1,4 @@
-name: Update Subscription
+name: My Update Sub
 on:
   schedule:
     - cron: '0 */6 * * *' # Обновление каждые 6 часов
