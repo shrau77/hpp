@@ -2,8 +2,8 @@ name: Update Subscriptions
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Каждые 6 часов
-  workflow_dispatch: # Возможность запустить руками
+    - cron: '0 */6 * * *' # Автозапуск каждые 6 часов
+  workflow_dispatch: # Кнопка для ручного запуска
 
 jobs:
   build:
@@ -27,6 +27,7 @@ jobs:
         run: |
           git config --global user.name "SubscriptionBot"
           git config --global user.email "bot@example.com"
-          git add sub.txt business.txt shadowsocks.txt vless_vmess.txt
-          git commit -m "Update all lists" || exit 0
+          # Добавляем все созданные файлы в репозиторий
+          git add sub.txt sub_lite.txt business.txt business_lite.txt shadowsocks.txt vless_vmess.txt
+          git commit -m "Update all subscriptions with rotation" || exit 0
           git push
