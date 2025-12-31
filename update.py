@@ -1,10 +1,7 @@
-import requests
-import base64
-import re
-import random
+import requests, base64, re, random
 from datetime import datetime
 
-# Твои источники
+# Твой список источников
 urls = [
     "https://etoneya.a9fm.site/",
     "https://etoneya.a9fm.site/2",
@@ -14,74 +11,94 @@ urls = [
     "https://github.com/AvenCores/goida-vpn-configs/raw/refs/heads/main/githubmirror/26.txt",
     "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
     "https://raw.githubusercontent.com/LowiKLive/BypassWhitelistRu/refs/heads/main/WhiteList-Bypass_Ru.txt",
-    "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love"
+    "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
+    "https://raw.githubusercontent.com/miladtahanian/multi-proxy-config-fetcher/refs/heads/main/configs/proxy_configs.txt"
 ]
 
-def clean_name(config_line):
-    if "#" not in config_line: return config_line
-    base_part, name = config_line.split("#", 1)
-    # Чистка мусора из названия
-    name = re.sub(r'(?:https?://)?(?:t\.me|tg://[\w/?=]+)/[\w\d_]+', '', name)
-    name = re.sub(r'@[\w\d_]+', '', name)
-    trash = [r'подпишись', r'канал', r'project', r'обновлено', r'update', r'fresh', r'free', r'LowiKLive', r'Bypass', r'WhiteList', r'EtoNeYa']
-    for pattern in trash:
-        name = re.sub(pattern, '', name, flags=re.IGNORECASE)
-    name = re.sub(r'[^\w\s\.]', ' ', name)
-    name = re.sub(r'\s+', ' ', name).strip()
-    return f"{base_part}#{name if name else 'Server'}"
+def get_unique_key(config):
+    try:
+        content = config.split("://")[1]
+        addr_part = content.split("@")[1] if "@" in content else content
+        main_part = addr_part.split("?")[0].split("/")[0]
+        return main_part
+    except: return None
 
+def clean_name(config_line, node_id):
+    if "#" not in config_line: return config_line
+    base, name = config_line.split("#", 1)
+    
+    locations = ['RU', 'NL', 'DE', 'FI', 'KZ', 'PL', 'TR', 'UK', 'US', 'FR', 'AT']
+    found_loc = ""
+    name_upper = name.upper()
+    for loc in locations:
+        if loc in name_upper:
+            found_loc = f"[{loc}] "
+            break
+
+    name = re.sub(r'(?:https?://)?(?:t\.me|tg://[\w/?=]+)/[\w\d_]+|@[\w\d_]+', '', name)
+    name = re.sub(r'[^\w\s]', ' ', name)
+    trash = ['подпишись', 'канал', 'project', 'обновлено', 'update', 'fresh', 'free', 'LowiKLive', 'Bypass', 'WhiteList', 'EtoNeYa']
+    for p in trash: name = re.sub(p, '', name, flags=re.IGNORECASE)
+    name = re.sub(r'\s+', ' ', name).strip()
+    
+    if not name or len(name) < 2: name = "Premium Node"
+    final_name = f"[HPP-{node_id}] {found_loc}{name}"
+    return f"{base}#{final_name[:45]}"
+
+# ИСПРАВЛЕННАЯ ФУНКЦИЯ: Теперь плашка — это комментарий
 def save_as_text(configs, filename, label=""):
-    proto = "ss" if "shadowsocks" in filename else "vless"
     now = datetime.now().strftime("%d.%m %H:%M")
-    info_line = f"{proto}://info#--- {label} | {now} | СЕРВЕРОВ: {len(configs)} ---"
-    final_text = "\n".join([info_line] + configs)
+    # Строка начинается с #, приложения её проигнорируют
+    info_comment = f"# --- {label} | {now} | NODES: {len(configs)} ---"
     with open(filename, "w", encoding="utf-8") as f:
-        f.write(final_text)
+        f.write("\n".join([info_comment] + configs))
 
 def main():
-    unique_configs = set()
-    # ЖЕСТКИЙ ФИЛЬТР: только эти протоколы попадут в список
-    allowed_protocols = ("vless://", "ss://", "vmess://", "trojan://", "hysteria2://", "tuic://", "hy2://")
+    unique_keys = set()
+    raw_configs = []
+    allowed = ("vless://", "ss://", "vmess://", "trojan://", "hysteria2://", "tuic://", "hy2://")
     
     for url in urls:
         try:
             resp = requests.get(url, timeout=15)
             if resp.status_code == 200:
                 content = resp.text
-                # Если контент в base64, декодируем
                 if "://" not in content[:50]:
                     try: content = base64.b64decode(content).decode('utf-8')
                     except: pass
-                
                 for line in content.splitlines():
                     line = line.strip()
-                    # Проверяем, начинается ли строка с нужного протокола
-                    if line.lower().startswith(allowed_protocols):
-                        unique_configs.add(clean_name(line))
+                    if line.lower().startswith(allowed):
+                        key = get_unique_key(line)
+                        if key and key not in unique_keys:
+                            unique_keys.add(key)
+                            raw_configs.append(line)
         except: continue
 
-    all_configs = sorted(list(unique_configs))
+    v_modern = [c for c in raw_configs if not c.startswith("ss://")]
+    ss_only = [c for c in raw_configs if c.startswith("ss://")]
     
-    # Сортировка по категориям
-    ss_only = [c for c in all_configs if c.startswith("ss://")]
-    v_modern = [c for c in all_configs if not c.startswith("ss://")]
+    ru_expert = [c for c in v_modern if any(x in c.lower() for x in ["reality", "vision", "grpc"])]
+    if len(ru_expert) < 300:
+        eu_geo = ['NL', 'DE', 'FI', 'PL', 'FR', 'SE']
+        ru_expert += [c for c in v_modern if any(g in c.upper() for g in eu_geo) and c not in ru_expert]
+    
+    if not ru_expert: ru_expert = v_modern
 
-    # 1. Полные списки
-    save_as_text(all_configs, "sub.txt", "FULL-BASE")
-    save_as_text(ss_only, "shadowsocks.txt", "WI-FI-ONLY")
-    save_as_text(v_modern, "vless_vmess.txt", "MOBILE-ONLY")
+    def finalize_list(subset):
+        cleaned = []
+        for i, line in enumerate(subset):
+            node_id = str(i + 1).zfill(3)
+            cleaned.append(clean_name(line, node_id))
+        return cleaned
 
-    # 2. SUB LITE (500 штук)
-    sub_lite = random.sample(all_configs, min(len(all_configs), 500))
-    save_as_text(sorted(sub_lite), "sub_lite.txt", "SUB-LITE")
-
-    # 3. BUSINESS (1000 современных)
-    biz = random.sample(v_modern, min(len(v_modern), 1000))
-    save_as_text(sorted(biz), "business.txt", "VIP-BUSINESS")
-
-    # 4. BUSINESS LITE (200 современных)
-    biz_lite = random.sample(v_modern, min(len(v_modern), 200))
-    save_as_text(sorted(biz_lite), "business_lite.txt", "VIP-LITE")
+    save_as_text(finalize_list(raw_configs), "sub.txt", "FULL-BASE")
+    save_as_text(finalize_list(ss_only), "shadowsocks.txt", "WI-FI-ONLY")
+    save_as_text(finalize_list(v_modern), "vless_vmess.txt", "MOBILE-ONLY")
+    
+    save_as_text(finalize_list(random.sample(raw_configs, min(len(raw_configs), 500))), "sub_lite.txt", "SUB-LITE")
+    save_as_text(finalize_list(random.sample(ru_expert, min(len(ru_expert), 1000))), "business.txt", "VIP-BUSINESS")
+    save_as_text(finalize_list(random.sample(ru_expert, min(len(ru_expert), 200))), "business_lite.txt", "VIP-LITE")
 
 if __name__ == "__main__":
     main()
