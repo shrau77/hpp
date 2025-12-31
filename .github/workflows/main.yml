@@ -1,9 +1,9 @@
-name: Update Subscriptions
+name: Update Configs
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Автозапуск каждые 6 часов
-  workflow_dispatch: # Кнопка для ручного запуска
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -20,14 +20,13 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      - name: Run script
+      - name: Run update script
         run: python update.py
 
-      - name: Commit and push
+      - name: Commit and Push
         run: |
-          git config --global user.name "SubscriptionBot"
-          git config --global user.email "bot@example.com"
-          # Добавляем все созданные файлы в репозиторий
-          git add sub.txt sub_lite.txt business.txt business_lite.txt shadowsocks.txt vless_vmess.txt
-          git commit -m "Update all subscriptions with rotation" || exit 0
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add *.txt
+          git commit -m "Update: Added Cable/Mobile filters. Total configs: $(grep '//' sub.txt | awk '{print $NF}')" || exit 0
           git push
