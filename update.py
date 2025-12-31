@@ -1,8 +1,9 @@
 import requests
 import base64
 import re
+import random
 
-# --- КОНФИГУРАЦИЯ ---
+# --- КОНФИГУРАЦИЯ ИСТОЧНИКОВ ---
 urls = [
     "https://etoneya.a9fm.site/",
     "https://etoneya.a9fm.site/2",
@@ -20,19 +21,19 @@ urls = [
     "https://sub-aggregator.vercel.app/"
 ]
 
+# Добавляем массив Goida (26 файлов)
 for i in range(1, 27):
     urls.append(f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt")
 
 VIP_KEYWORDS = ['whitelist', 'reality', 'cable', 'mobile', 'ozon', 'vk', 'yandex']
 
-def clean_name(config, index):
+def clean_name(config, index, tag=""):
     try:
         if '#' in config:
-            base, name = config.split('#', 1)
-            geo_match = re.search(r'([A-Z]{2})', name.upper())
-            geo = f" [{geo_match.group(1)}]" if geo_match else ""
+            base, _ = config.split('#', 1)
             proto = "VLESS" if base.startswith("vless") else "SS" if base.startswith("ss") else "VPN"
-            return f"{base}#[HPP-{index:03d}]{geo} {proto} Premium"
+            prefix = f"[HPP-{tag}{index:03d}]" if tag else f"[HPP-{index:03d}]"
+            return f"{base}#{prefix} {proto} Premium"
     except: pass
     return config
 
@@ -41,16 +42,15 @@ def get_weight(config):
     c_lower = config.lower()
     if 'reality' in c_lower: weight += 50
     if any(k in c_lower for k in VIP_KEYWORDS): weight += 30
-    if 'vless' in c_lower: weight += 10
     return weight
 
-# --- СБОР ---
+# --- СБОР И ФИЛЬТРАЦИЯ ---
 all_configs = []
 unique_keys = set()
 
 for url in urls:
     try:
-        resp = requests.get(url, timeout=10)
+        resp = requests.get(url, timeout=15)
         if resp.status_code == 200:
             content = resp.text
             if "://" not in content[:50]:
@@ -65,22 +65,30 @@ for url in urls:
                         all_configs.append(line)
     except: continue
 
+# Сортировка по качеству (вес)
 all_configs.sort(key=get_weight, reverse=True)
 total_count = len(all_configs)
-final_configs = [clean_name(conf, i+1) for i, conf in enumerate(all_configs)]
 
 # --- СОХРАНЕНИЕ ---
-def save_file(name, data):
+def save_file(name, data, tag="", limit=None):
+    if limit: data = data[:limit]
     with open(name, "w", encoding="utf-8") as f:
-        # Добавляем инфо-комментарий в начало файла
-        f.write(f"// Total unique configs collected: {total_count}\n")
-        f.write("\n".join(data))
+        f.write(f"// Total unique configs found: {total_count}\n")
+        processed = [clean_name(conf, i+1, tag) for i, conf in enumerate(data)]
+        f.write("\n".join(processed))
 
-save_file("sub.txt", final_configs)
-save_file("sub_lite.txt", final_configs[:500]) # Топ-500 для лайт версии
-save_file("business.txt", final_configs[:1000]) # Топ-1000
-save_file("business_lite.txt", final_configs[:200]) # Самые надежные ТОП-200
-save_file("shadowsocks.txt", [c for c in final_configs if c.startswith("ss://")])
-save_file("vless_vmess.txt", [c for c in final_configs if not c.startswith("ss://")])
+# 1. Основные файлы
+save_file("sub.txt", all_configs, limit=10000)
+save_file("sub_lite.txt", all_configs, limit=500)
+save_file("business.txt", all_configs, limit=1000)
+save_file("business_lite.txt", all_configs, limit=200)
 
-print(f"Готово! Всего: {total_count}")
+# 2. По типам подключения (БС)
+save_file("whitelist_cable.txt", [c for c in all_configs if 'cable' in c.lower()], tag="CABLE-")
+save_file("whitelist_mobile.txt", [c for c in all_configs if 'mobile' in c.lower()], tag="MOB-")
+
+# 3. По протоколам
+save_file("shadowsocks.txt", [c for c in all_configs if c.startswith("ss://")], limit=2000)
+save_file("vless_vmess.txt", [c for c in all_configs if not c.startswith("ss://")], limit=5000)
+
+print(f"Готово! Обработано {total_count} конфигов.")
