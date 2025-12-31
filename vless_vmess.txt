@@ -1,12 +1,4 @@
-vless://info#--- MOBILE-ONLY | 31.12 08:03 | СЕРВЕРОВ: 4052 ---
-<a href="https://t.me/YoutubeUnBlockRu" target="_blank" class="social-link"><i class="fas fa-key"></i></a>
-<a href="https://t.me/etoniya_support" target="_blank" class="creator-link">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<p>Telegram: <a href="https://t.me/EtoNeYaSupportBot">@EtoNeYaSupportBot</a></p>
-<p>Telegram: <a href="https://t.me/YoutubeUnBlockRU">@YoutubeUnBlockRU</a></p>
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-https://etoneya.a9fm.site/1
-https://etoneya.a9fm.site/test
+vless://info#--- MOBILE-ONLY | 31.12 08:08 | СЕРВЕРОВ: 4044 ---
 hysteria2://SNItest@46.243.232.105:443?insecure=1&sni=gosuslugi.ru#40Arshiavpn12 20 D8 AC D9 88 DB 8C D9 86 20 D8 B4 D9 88 20 D9 82 D8 B7 D8 B9 20 D9 86 D8 B4 DB 8C 20 231
 hysteria2://dongtaiwang.com@208.87.243.187:22222?security=tls&insecure=1&sni=sberbank.ru#F0 9F 87 BA F0 9F 87 B8US 20 7C 20Hysteria2
 hysteria2://dongtaiwang.com@208.87.243.187:22222?sni=sberbank.ru&insecure=1&allowInsecure=1#F0 9F 87 BA F0 9F 87 B8 20United 20States 2C 20Los 20Angeles 20 5BBL 5D
