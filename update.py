@@ -1,7 +1,6 @@
 import requests, base64, re, random
 from datetime import datetime
 
-# Твой список источников
 urls = [
     "https://etoneya.a9fm.site/",
     "https://etoneya.a9fm.site/2",
@@ -15,6 +14,13 @@ urls = [
     "https://raw.githubusercontent.com/miladtahanian/multi-proxy-config-fetcher/refs/heads/main/configs/proxy_configs.txt"
 ]
 
+# Твой список элитных SNI для маскировки
+ELITE_SNI = [
+    'ozon.ru', 'ozone.ru', 'vk.com', 'userapi.com', 'yandex.net', 'yandex.ru',
+    'mail.ru', 'sberbank.ru', 'tbank.ru', 'tinkoff.ru', 'wildberries.ru',
+    'gosuslugi.ru', 'avito.ru', 'rutube.ru', 'kinopoisk.ru', '2gis.ru', 'mts.ru'
+]
+
 def get_unique_key(config):
     try:
         content = config.split("://")[1]
@@ -22,6 +28,25 @@ def get_unique_key(config):
         main_part = addr_part.split("?")[0].split("/")[0]
         return main_part
     except: return None
+
+def get_weight(config_line):
+    """Гибкая система баллов для сортировки"""
+    score = 0
+    c_lower = config_line.lower()
+    
+    # +500 за современные протоколы (пробивают ТСПУ)
+    if any(proto in c_lower for proto in ["reality", "vision", "grpc", "h2"]):
+        score += 500
+        
+    # +300 за твои SNI (даже если протокол обычный)
+    if any(domain in c_lower for domain in ELITE_SNI):
+        score += 300
+        
+    # +100 за приоритетные страны
+    if any(loc in c_lower.upper() for loc in ['RU', 'NL', 'DE', 'FI', 'KZ']):
+        score += 100
+        
+    return score
 
 def clean_name(config_line, node_id):
     if "#" not in config_line: return config_line
@@ -42,13 +67,10 @@ def clean_name(config_line, node_id):
     name = re.sub(r'\s+', ' ', name).strip()
     
     if not name or len(name) < 2: name = "Premium Node"
-    final_name = f"[HPP-{node_id}] {found_loc}{name}"
-    return f"{base}#{final_name[:45]}"
+    return f"{base}#[HPP-{node_id}] {found_loc}{name}"[:90] # Небольшой запас длины
 
-# ИСПРАВЛЕННАЯ ФУНКЦИЯ: Теперь плашка — это комментарий
 def save_as_text(configs, filename, label=""):
     now = datetime.now().strftime("%d.%m %H:%M")
-    # Строка начинается с #, приложения её проигнорируют
     info_comment = f"# --- {label} | {now} | NODES: {len(configs)} ---"
     with open(filename, "w", encoding="utf-8") as f:
         f.write("\n".join([info_comment] + configs))
@@ -75,30 +97,27 @@ def main():
                             raw_configs.append(line)
         except: continue
 
-    v_modern = [c for c in raw_configs if not c.startswith("ss://")]
-    ss_only = [c for c in raw_configs if c.startswith("ss://")]
-    
-    ru_expert = [c for c in v_modern if any(x in c.lower() for x in ["reality", "vision", "grpc"])]
-    if len(ru_expert) < 300:
-        eu_geo = ['NL', 'DE', 'FI', 'PL', 'FR', 'SE']
-        ru_expert += [c for c in v_modern if any(g in c.upper() for g in eu_geo) and c not in ru_expert]
-    
-    if not ru_expert: ru_expert = v_modern
+    # Ранжирование по весу
+    weighted_all = sorted([(get_weight(c), c) for c in raw_configs], key=lambda x: x[0], reverse=True)
+    sorted_all = [x[1] for x in weighted_all]
+
+    # Категории (уже отсортированные)
+    v_modern = [c for c in sorted_all if not c.startswith("ss://")]
+    ss_only = [c for c in sorted_all if c.startswith("ss://")]
 
     def finalize_list(subset):
-        cleaned = []
-        for i, line in enumerate(subset):
-            node_id = str(i + 1).zfill(3)
-            cleaned.append(clean_name(line, node_id))
-        return cleaned
+        return [clean_name(line, str(i + 1).zfill(3)) for i, line in enumerate(subset)]
 
-    save_as_text(finalize_list(raw_configs), "sub.txt", "FULL-BASE")
+    # Сохраняем файлы
+    save_as_text(finalize_list(sorted_all), "sub.txt", "FULL-BASE")
     save_as_text(finalize_list(ss_only), "shadowsocks.txt", "WI-FI-ONLY")
     save_as_text(finalize_list(v_modern), "vless_vmess.txt", "MOBILE-ONLY")
     
-    save_as_text(finalize_list(random.sample(raw_configs, min(len(raw_configs), 500))), "sub_lite.txt", "SUB-LITE")
-    save_as_text(finalize_list(random.sample(ru_expert, min(len(ru_expert), 1000))), "business.txt", "VIP-BUSINESS")
-    save_as_text(finalize_list(random.sample(ru_expert, min(len(ru_expert), 200))), "business_lite.txt", "VIP-LITE")
+    # Lite версии (рандом из ТОП-500 самых весомых)
+    top_500 = sorted_all[:500]
+    save_as_text(finalize_list(random.sample(top_500, min(len(top_500), 200))), "business_lite.txt", "VIP-LITE")
+    save_as_text(finalize_list(sorted_all[:1000]), "business.txt", "VIP-BUSINESS")
+    save_as_text(finalize_list(random.sample(sorted_all, min(len(sorted_all), 500))), "sub_lite.txt", "SUB-LITE")
 
 if __name__ == "__main__":
     main()
