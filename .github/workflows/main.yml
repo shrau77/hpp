@@ -1,26 +1,32 @@
-name: My Update Sub
+name: Update Subscriptions
+
 on:
   schedule:
-    - cron: '0 */6 * * *' # Обновление каждые 6 часов
-  workflow_dispatch: # Чтобы можно было запустить кнопкой
+    - cron: '0 */6 * * *' # Каждые 6 часов
+  workflow_dispatch: # Возможность запустить руками
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
+
       - name: Install dependencies
         run: pip install requests
+
       - name: Run script
         run: python update.py
+
       - name: Commit and push
         run: |
-          git config --global user.name "Bot"
+          git config --global user.name "SubscriptionBot"
           git config --global user.email "bot@example.com"
-          git add sub.txt
-          git commit -m "Auto update" || exit 0
+          git add sub.txt business.txt shadowsocks.txt vless_vmess.txt
+          git commit -m "Update all lists" || exit 0
           git push
