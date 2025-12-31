@@ -1,125 +1,121 @@
-import requests, base64, re, random
-from datetime import datetime
+import requests
+import base64
+import re
+import random
 
+# --- КОНФИГУРАЦИЯ ---
+# Твой расширенный список источников
 urls = [
     "https://etoneya.a9fm.site/",
     "https://etoneya.a9fm.site/2",
-    "https://raw.githubusercontent.com/EtoNeYaProject/etoneyaproject.github.io/refs/heads/main/1",
-    "https://raw.githubusercontent.com/EtoNeYaProject/etoneyaproject.github.io/refs/heads/main/2",
-    "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt",
-    "https://github.com/AvenCores/goida-vpn-configs/raw/refs/heads/main/githubmirror/26.txt",
-    "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
-    "https://raw.githubusercontent.com/LowiKLive/BypassWhitelistRu/refs/heads/main/WhiteList-Bypass_Ru.txt",
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
-    "https://raw.githubusercontent.com/miladtahanian/multi-proxy-config-fetcher/refs/heads/main/configs/proxy_configs.txt"
+    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
+    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
+    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_VLESS_RUS.txt",
+    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_SS+All_RUS.txt",
+    "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
+    "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt",
+    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/whitelist.txt",
+    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/blacklist.txt",
+    "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
+    "https://raw.githubusercontent.com/vsevjik/OBSpiskov/refs/heads/main/wwh",
+    "https://sub-aggregator.vercel.app/"
 ]
 
-ELITE_SNI = ['ozon.ru', 'ozone.ru', 'vk.com', 'userapi.com', 'yandex.net', 'yandex.ru', 'mail.ru', 'sberbank.ru', 'tbank.ru', 'tinkoff.ru', 'wildberries.ru', 'gosuslugi.ru', 'avito.ru', 'rutube.ru', 'kinopoisk.ru', '2gis.ru', 'mts.ru']
+# Добавляем 26 ссылок Goida (автогенерация)
+for i in range(1, 27):
+    urls.append(f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt")
 
-def get_unique_key(config):
+# Ключевые слова для приоритизации (те самые Whitelist и Reality)
+VIP_KEYWORDS = ['whitelist', 'reality', 'cable', 'mobile', 'ozon', 'vk', 'yandex']
+
+def clean_name(config, index):
+    """Очистка имени и добавление префикса HPP"""
     try:
-        content = config.split("://")[1]
-        addr_part = content.split("@")[1] if "@" in content else content
-        main_part = addr_part.split("?")[0].split("/")[0]
-        return main_part
-    except: return None
+        if '#' in config:
+            base, name = config.split('#', 1)
+            # Убираем мусор, оставляем только ГЕО (страну) если она есть
+            geo_match = re.search(r'([A-Z]{2})', name.upper())
+            geo = f" [{geo_match.group(1)}]" if geo_match else ""
+            
+            # Пометка протокола
+            proto = "VLESS" if base.startswith("vless") else "SS" if base.startswith("ss") else "VPN"
+            
+            new_name = f"[HPP-{index:03d}]{geo} {proto} Premium"
+            return f"{base}#{new_name}"
+    except:
+        pass
+    return config
 
-def get_weight(config_line):
-    score = 0
-    c_lower = config_line.lower()
-    if any(proto in c_lower for proto in ["reality", "vision", "grpc", "h2"]): score += 500
-    if any(domain in c_lower for domain in ELITE_SNI): score += 300
-    if any(loc in c_lower.upper() for loc in ['RU', 'NL', 'DE', 'FI', 'KZ']): score += 100
-    return score
+def get_weight(config):
+    """Определяем 'крутость' конфига для сортировки"""
+    weight = 0
+    c_lower = config.lower()
+    if 'reality' in c_lower: weight += 50
+    if any(k in c_lower for k in VIP_KEYWORDS): weight += 30
+    if 'vless' in c_lower: weight += 10
+    return weight
 
-def clean_name(config_line, node_id):
-    """Максимально безопасная очистка без риска обрезать конфиг"""
-    if "#" not in config_line: 
-        return f"{config_line}#[HPP-{node_id}] Premium Server"
-        
-    # Разделяем только по ПЕРВОЙ решетке
-    parts = config_line.split("#", 1)
-    base_config = parts[0]
-    raw_name = parts[1]
-    
-    # 1. Определяем ГЕО (ищем в оригинальном названии)
-    locations = ['RU', 'NL', 'DE', 'FI', 'KZ', 'PL', 'TR', 'UK', 'US', 'FR', 'AT']
-    geo_tag = ""
-    name_up = raw_name.upper()
-    for loc in locations:
-        if loc in name_up:
-            geo_tag = f"[{loc}] "
-            break
+# --- ОСНОВНОЙ ПРОЦЕСС ---
+all_configs = []
+unique_keys = set()
 
-    # 2. Удаляем мусор, hex-коды смайликов и рекламу ТГ
-    # Убираем последовательности типа F0 9F 92...
-    clean = re.sub(r'[A-F0-9]{2}(?:\s[A-F0-9]{2})+', '', raw_name)
-    # Убираем ссылки и @юзернеймы
-    clean = re.sub(r'(?:https?://)?(?:t\.me|tg://[\w/?=]+)/[\w\d_]+|@[\w\d_]+', '', clean)
-    # Убираем цифровые индексы в начале строки
-    clean = re.sub(r'^\s*\d+[\s\.\-_]*', '', clean)
-    # Оставляем только буквы, цифры и пробелы
-    clean = re.sub(r'[^\w\s]', ' ', clean)
-    
-    # Черный список слов (если они есть, название заменяется)
-    stop_words = ['join', 'telegram', 'channel', 'подпишись', 'канал', 'group', 'реклама']
-    if any(word in clean.lower() for word in stop_words):
-        clean = "Ultra Fast"
+print(f"Начинаю сбор из {len(urls)} источников...")
 
-    # Доп. чистка технических слов
-    for trash in ['VLESS', 'VMESS', 'TG', 'UPDATE', 'FRESH', 'FREE', 'BYPASS']:
-        clean = re.sub(trash, '', clean, flags=re.IGNORECASE)
-    
-    clean = re.sub(r'\s+', ' ', clean).strip()
-    
-    if len(clean) < 2: clean = "Premium Server"
+for url in urls:
+    try:
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            content = resp.text
+            # Проверка на Base64
+            if "://" not in content[:50]:
+                try:
+                    content = base64.b64decode(content).decode('utf-8')
+                except:
+                    pass
+            
+            lines = content.splitlines()
+            for line in lines:
+                line = line.strip()
+                if "://" in line:
+                    # Уникальность по IP и Порту (до знака #)
+                    key = line.split('#')[0]
+                    if key not in unique_keys:
+                        unique_keys.add(key)
+                        all_configs.append(line)
+    except:
+        continue
 
-    # Формируем безопасное название
-    final_label = f"[HPP-{node_id}] {geo_tag}{clean}"[:55]
-    return f"{base_config}#{final_label}"
+# Сортировка: самые "живучие" в начало
+all_configs.sort(key=get_weight, reverse=True)
 
-def save_as_text(configs, filename, label=""):
-    now = datetime.now().strftime("%d.%m %H:%M")
-    info = f"# --- {label} | {now} | NODES: {len(configs)} ---"
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write("\n".join([info] + configs))
+# Очистка имен (косметика)
+final_configs = [clean_name(conf, i+1) for i, conf in enumerate(all_configs)]
 
-def main():
-    unique_keys = set()
-    raw_configs = []
-    allowed = ("vless://", "ss://", "vmess://", "trojan://", "hysteria2://", "tuic://", "hy2://")
-    
-    for url in urls:
-        try:
-            resp = requests.get(url, timeout=15)
-            if resp.status_code == 200:
-                content = resp.text
-                if "://" not in content[:50]:
-                    try: content = base64.b64decode(content).decode('utf-8')
-                    except: pass
-                for line in content.splitlines():
-                    line = line.strip()
-                    if line.lower().startswith(allowed):
-                        key = get_unique_key(line)
-                        if key and key not in unique_keys:
-                            unique_keys.add(key)
-                            raw_configs.append(line)
-        except: continue
+# --- СОХРАНЕНИЕ ФАЙЛОВ ---
+def save_file(name, data):
+    with open(name, "w", encoding="utf-8") as f:
+        f.write("\n".join(data))
 
-    weighted_all = sorted([(get_weight(c), c) for c in raw_configs], key=lambda x: x[0], reverse=True)
-    sorted_all = [x[1] for x in weighted_all]
-    v_modern = [c for c in sorted_all if not c.startswith("ss://")]
+# 1. sub.txt (Все)
+save_file("sub.txt", final_configs)
 
-    def finalize_list(subset):
-        return [clean_name(line, str(i + 1).zfill(3)) for i, line in enumerate(subset)]
+# 2. sub_lite.txt (500 рандомных)
+save_file("sub_lite.txt", random.sample(final_configs, min(500, len(final_configs))))
 
-    save_as_text(finalize_list(sorted_all), "sub.txt", "FULL-BASE")
-    save_as_text(finalize_list(v_modern), "vless_vmess.txt", "MOBILE-ONLY")
-    save_as_text(finalize_list(sorted_all[:1000]), "business.txt", "VIP-BUSINESS")
-    
-    top_500 = sorted_all[:500]
-    save_as_text(finalize_list(random.sample(top_500, min(len(top_500), 200))), "business_lite.txt", "VIP-LITE")
-    save_as_text(finalize_list(random.sample(sorted_all, min(len(sorted_all), 500))), "sub_lite.txt", "SUB-LITE")
+# 3. business.txt (Топ 1000 по качеству)
+save_file("business.txt", final_configs[:1000])
 
-if __name__ == "__main__":
-    main()
+# 4. business_lite.txt (200 рандомных из топ-500)
+save_file("business_lite.txt", random.sample(final_configs[:500], min(200, len(final_configs[:500]))))
+
+# 5. shadowsocks.txt
+ss_only = [c for c in final_configs if c.startswith("ss://")]
+save_file("shadowsocks.txt", ss_only)
+
+# 6. vless_vmess.txt
+modern_only = [c for c in final_configs if not c.startswith("ss://")]
+save_file("vless_vmess.txt", modern_only)
+
+print(f"Готово! Собрано уникальных конфигов: {len(final_configs)}")
+ 
