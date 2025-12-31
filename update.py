@@ -14,7 +14,6 @@ urls = [
     "https://raw.githubusercontent.com/miladtahanian/multi-proxy-config-fetcher/refs/heads/main/configs/proxy_configs.txt"
 ]
 
-# Твой список элитных SNI для маскировки
 ELITE_SNI = [
     'ozon.ru', 'ozone.ru', 'vk.com', 'userapi.com', 'yandex.net', 'yandex.ru',
     'mail.ru', 'sberbank.ru', 'tbank.ru', 'tinkoff.ru', 'wildberries.ru',
@@ -30,44 +29,52 @@ def get_unique_key(config):
     except: return None
 
 def get_weight(config_line):
-    """Гибкая система баллов для сортировки"""
     score = 0
     c_lower = config_line.lower()
-    
-    # +500 за современные протоколы (пробивают ТСПУ)
     if any(proto in c_lower for proto in ["reality", "vision", "grpc", "h2"]):
         score += 500
-        
-    # +300 за твои SNI (даже если протокол обычный)
     if any(domain in c_lower for domain in ELITE_SNI):
         score += 300
-        
-    # +100 за приоритетные страны
     if any(loc in c_lower.upper() for loc in ['RU', 'NL', 'DE', 'FI', 'KZ']):
         score += 100
-        
     return score
 
 def clean_name(config_line, node_id):
-    if "#" not in config_line: return config_line
-    base, name = config_line.split("#", 1)
+    """Исправлено: теперь не режет тело конфига"""
+    if "#" not in config_line: 
+        return f"{config_line}#[HPP-{node_id}] Premium Server"
+        
+    # Разделяем СТРОГО на две части: конфиг (base) и имя (old_name)
+    parts = config_line.split("#", 1)
+    base = parts[0]
+    old_name = parts[1]
     
+    # 1. Вычисляем ГЕО
     locations = ['RU', 'NL', 'DE', 'FI', 'KZ', 'PL', 'TR', 'UK', 'US', 'FR', 'AT']
     found_loc = ""
-    name_upper = name.upper()
+    name_upper = old_name.upper()
     for loc in locations:
         if loc in name_upper:
             found_loc = f"[{loc}] "
             break
 
-    name = re.sub(r'(?:https?://)?(?:t\.me|tg://[\w/?=]+)/[\w\d_]+|@[\w\d_]+', '', name)
-    name = re.sub(r'[^\w\s]', ' ', name)
+    # 2. Чистим текст после решетки от мусора
+    temp_name = re.sub(r'(?:https?://)?(?:t\.me|tg://[\w/?=]+)/[\w\d_]+|@[\w\d_]+', '', old_name)
+    temp_name = re.sub(r'[^\w\s]', ' ', temp_name)
     trash = ['подпишись', 'канал', 'project', 'обновлено', 'update', 'fresh', 'free', 'LowiKLive', 'Bypass', 'WhiteList', 'EtoNeYa']
-    for p in trash: name = re.sub(p, '', name, flags=re.IGNORECASE)
-    name = re.sub(r'\s+', ' ', name).strip()
+    for p in trash: 
+        temp_name = re.sub(p, '', temp_name, flags=re.IGNORECASE)
     
-    if not name or len(name) < 2: name = "Premium Node"
-    return f"{base}#[HPP-{node_id}] {found_loc}{name}"[:90] # Небольшой запас длины
+    temp_name = re.sub(r'\s+', ' ', temp_name).strip()
+    
+    if not temp_name or len(temp_name) < 2: 
+        temp_name = "Premium Node"
+
+    # 3. Собираем финальное имя (обрезаем ТОЛЬКО название до 50 символов)
+    clean_label = f"[HPP-{node_id}] {found_loc}{temp_name}"[:50]
+    
+    # Склеиваем обратно ЦЕЛЫЙ base и новое имя
+    return f"{base}#{clean_label}"
 
 def save_as_text(configs, filename, label=""):
     now = datetime.now().strftime("%d.%m %H:%M")
@@ -97,23 +104,20 @@ def main():
                             raw_configs.append(line)
         except: continue
 
-    # Ранжирование по весу
+    # Сортировка по весу (лучшие вверх)
     weighted_all = sorted([(get_weight(c), c) for c in raw_configs], key=lambda x: x[0], reverse=True)
     sorted_all = [x[1] for x in weighted_all]
 
-    # Категории (уже отсортированные)
     v_modern = [c for c in sorted_all if not c.startswith("ss://")]
     ss_only = [c for c in sorted_all if c.startswith("ss://")]
 
     def finalize_list(subset):
         return [clean_name(line, str(i + 1).zfill(3)) for i, line in enumerate(subset)]
 
-    # Сохраняем файлы
     save_as_text(finalize_list(sorted_all), "sub.txt", "FULL-BASE")
     save_as_text(finalize_list(ss_only), "shadowsocks.txt", "WI-FI-ONLY")
     save_as_text(finalize_list(v_modern), "vless_vmess.txt", "MOBILE-ONLY")
     
-    # Lite версии (рандом из ТОП-500 самых весомых)
     top_500 = sorted_all[:500]
     save_as_text(finalize_list(random.sample(top_500, min(len(top_500), 200))), "business_lite.txt", "VIP-LITE")
     save_as_text(finalize_list(sorted_all[:1000]), "business.txt", "VIP-BUSINESS")
