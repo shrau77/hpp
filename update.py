@@ -14,11 +14,7 @@ urls = [
     "https://raw.githubusercontent.com/miladtahanian/multi-proxy-config-fetcher/refs/heads/main/configs/proxy_configs.txt"
 ]
 
-ELITE_SNI = [
-    'ozon.ru', 'ozone.ru', 'vk.com', 'userapi.com', 'yandex.net', 'yandex.ru',
-    'mail.ru', 'sberbank.ru', 'tbank.ru', 'tinkoff.ru', 'wildberries.ru',
-    'gosuslugi.ru', 'avito.ru', 'rutube.ru', 'kinopoisk.ru', '2gis.ru', 'mts.ru'
-]
+ELITE_SNI = ['ozon.ru', 'ozone.ru', 'vk.com', 'userapi.com', 'yandex.net', 'yandex.ru', 'mail.ru', 'sberbank.ru', 'tbank.ru', 'tinkoff.ru', 'wildberries.ru', 'gosuslugi.ru', 'avito.ru', 'rutube.ru', 'kinopoisk.ru', '2gis.ru', 'mts.ru']
 
 def get_unique_key(config):
     try:
@@ -31,56 +27,62 @@ def get_unique_key(config):
 def get_weight(config_line):
     score = 0
     c_lower = config_line.lower()
-    if any(proto in c_lower for proto in ["reality", "vision", "grpc", "h2"]):
-        score += 500
-    if any(domain in c_lower for domain in ELITE_SNI):
-        score += 300
-    if any(loc in c_lower.upper() for loc in ['RU', 'NL', 'DE', 'FI', 'KZ']):
-        score += 100
+    if any(proto in c_lower for proto in ["reality", "vision", "grpc", "h2"]): score += 500
+    if any(domain in c_lower for domain in ELITE_SNI): score += 300
+    if any(loc in c_lower.upper() for loc in ['RU', 'NL', 'DE', 'FI', 'KZ']): score += 100
     return score
 
 def clean_name(config_line, node_id):
-    """Исправлено: теперь не режет тело конфига"""
+    """Максимально безопасная очистка без риска обрезать конфиг"""
     if "#" not in config_line: 
         return f"{config_line}#[HPP-{node_id}] Premium Server"
         
-    # Разделяем СТРОГО на две части: конфиг (base) и имя (old_name)
+    # Разделяем только по ПЕРВОЙ решетке
     parts = config_line.split("#", 1)
-    base = parts[0]
-    old_name = parts[1]
+    base_config = parts[0]
+    raw_name = parts[1]
     
-    # 1. Вычисляем ГЕО
+    # 1. Определяем ГЕО (ищем в оригинальном названии)
     locations = ['RU', 'NL', 'DE', 'FI', 'KZ', 'PL', 'TR', 'UK', 'US', 'FR', 'AT']
-    found_loc = ""
-    name_upper = old_name.upper()
+    geo_tag = ""
+    name_up = raw_name.upper()
     for loc in locations:
-        if loc in name_upper:
-            found_loc = f"[{loc}] "
+        if loc in name_up:
+            geo_tag = f"[{loc}] "
             break
 
-    # 2. Чистим текст после решетки от мусора
-    temp_name = re.sub(r'(?:https?://)?(?:t\.me|tg://[\w/?=]+)/[\w\d_]+|@[\w\d_]+', '', old_name)
-    temp_name = re.sub(r'[^\w\s]', ' ', temp_name)
-    trash = ['подпишись', 'канал', 'project', 'обновлено', 'update', 'fresh', 'free', 'LowiKLive', 'Bypass', 'WhiteList', 'EtoNeYa']
-    for p in trash: 
-        temp_name = re.sub(p, '', temp_name, flags=re.IGNORECASE)
+    # 2. Удаляем мусор, hex-коды смайликов и рекламу ТГ
+    # Убираем последовательности типа F0 9F 92...
+    clean = re.sub(r'[A-F0-9]{2}(?:\s[A-F0-9]{2})+', '', raw_name)
+    # Убираем ссылки и @юзернеймы
+    clean = re.sub(r'(?:https?://)?(?:t\.me|tg://[\w/?=]+)/[\w\d_]+|@[\w\d_]+', '', clean)
+    # Убираем цифровые индексы в начале строки
+    clean = re.sub(r'^\s*\d+[\s\.\-_]*', '', clean)
+    # Оставляем только буквы, цифры и пробелы
+    clean = re.sub(r'[^\w\s]', ' ', clean)
     
-    temp_name = re.sub(r'\s+', ' ', temp_name).strip()
-    
-    if not temp_name or len(temp_name) < 2: 
-        temp_name = "Premium Node"
+    # Черный список слов (если они есть, название заменяется)
+    stop_words = ['join', 'telegram', 'channel', 'подпишись', 'канал', 'group', 'реклама']
+    if any(word in clean.lower() for word in stop_words):
+        clean = "Ultra Fast"
 
-    # 3. Собираем финальное имя (обрезаем ТОЛЬКО название до 50 символов)
-    clean_label = f"[HPP-{node_id}] {found_loc}{temp_name}"[:50]
+    # Доп. чистка технических слов
+    for trash in ['VLESS', 'VMESS', 'TG', 'UPDATE', 'FRESH', 'FREE', 'BYPASS']:
+        clean = re.sub(trash, '', clean, flags=re.IGNORECASE)
     
-    # Склеиваем обратно ЦЕЛЫЙ base и новое имя
-    return f"{base}#{clean_label}"
+    clean = re.sub(r'\s+', ' ', clean).strip()
+    
+    if len(clean) < 2: clean = "Premium Server"
+
+    # Формируем безопасное название
+    final_label = f"[HPP-{node_id}] {geo_tag}{clean}"[:55]
+    return f"{base_config}#{final_label}"
 
 def save_as_text(configs, filename, label=""):
     now = datetime.now().strftime("%d.%m %H:%M")
-    info_comment = f"# --- {label} | {now} | NODES: {len(configs)} ---"
+    info = f"# --- {label} | {now} | NODES: {len(configs)} ---"
     with open(filename, "w", encoding="utf-8") as f:
-        f.write("\n".join([info_comment] + configs))
+        f.write("\n".join([info] + configs))
 
 def main():
     unique_keys = set()
@@ -104,23 +106,19 @@ def main():
                             raw_configs.append(line)
         except: continue
 
-    # Сортировка по весу (лучшие вверх)
     weighted_all = sorted([(get_weight(c), c) for c in raw_configs], key=lambda x: x[0], reverse=True)
     sorted_all = [x[1] for x in weighted_all]
-
     v_modern = [c for c in sorted_all if not c.startswith("ss://")]
-    ss_only = [c for c in sorted_all if c.startswith("ss://")]
 
     def finalize_list(subset):
         return [clean_name(line, str(i + 1).zfill(3)) for i, line in enumerate(subset)]
 
     save_as_text(finalize_list(sorted_all), "sub.txt", "FULL-BASE")
-    save_as_text(finalize_list(ss_only), "shadowsocks.txt", "WI-FI-ONLY")
     save_as_text(finalize_list(v_modern), "vless_vmess.txt", "MOBILE-ONLY")
+    save_as_text(finalize_list(sorted_all[:1000]), "business.txt", "VIP-BUSINESS")
     
     top_500 = sorted_all[:500]
     save_as_text(finalize_list(random.sample(top_500, min(len(top_500), 200))), "business_lite.txt", "VIP-LITE")
-    save_as_text(finalize_list(sorted_all[:1000]), "business.txt", "VIP-BUSINESS")
     save_as_text(finalize_list(random.sample(sorted_all, min(len(sorted_all), 500))), "sub_lite.txt", "SUB-LITE")
 
 if __name__ == "__main__":
