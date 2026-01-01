@@ -1,4 +1,4 @@
-name: Update Configs
+Name: Update Configs
 
 on:
   schedule:
@@ -18,7 +18,8 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        run: pip install requests
+        run: |
+          pip install requests geoip2
 
       - name: Run update script
         run: python update.py
@@ -28,5 +29,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add *.txt
-          git commit -m "Update: Added Cable/Mobile filters. Total configs: $(grep '//' sub.txt | awk '{print $NF}')" || exit 0
+          git commit -m "Update: GeoIP countries added. Total configs: $(wc -l < sub.txt)" || exit 0
           git push
