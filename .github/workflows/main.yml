@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,6 +24,15 @@ jobs:
         run: |
           pip install requests geoip2
 
+      - name: Check database file
+        run: |
+          if [ -f "GeoLite2-Country.mmdb" ]; then
+            echo "✅ База найдена"
+          else
+            echo "❌ ФАЙЛ БАЗЫ НЕ НАЙДЕН! Проверь, что он лежит в корне репозитория"
+            exit 1
+          fi
+
       - name: Run update script
         run: python update.py
 
@@ -29,5 +41,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add *.txt
-          git commit -m "Update configs" || exit 0
+          git commit -m "Update configs: $(date +'%Y-%m-%d %H:%M')" || exit 0
           git push
