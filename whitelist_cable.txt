@@ -1,2 +1,2 @@
-// Total unique configs found: 67741
+// Total unique configs found: 68066
 vless://b4d5ea99-0676-4420-af83-095973c1763f@applicable-amber.king4players.com:80?path=/custom_config&amp;security=none&amp;encryption=none&amp;type=ws#[HPP-CABLE-001] VLESS Premium
