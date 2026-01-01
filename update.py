@@ -4,6 +4,9 @@ import re
 import os
 import sys
 from datetime import datetime
+from urllib.parse import urlparse
+import socket
+import geoip2.database  # НУЖНО УСТАНОВИТЬ: pip install geoip2
 
 # --- ТВОИ НАСТРОЙКИ ---
 TARGET_SNI = [
@@ -35,6 +38,41 @@ urls = [
 for i in range(1, 27):
     urls.append(f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt")
 
+# --- ИНИЦИАЛИЗАЦИЯ GEOIP ---
+GEOIP_DB_PATH = 'GeoLite2-Country.mmdb' # Файл должен лежать в папке со скриптом
+reader = None
+if os.path.exists(GEOIP_DB_PATH):
+    reader = geoip2.database.Reader(GEOIP_DB_PATH)
+else:
+    print(f"⚠️ Файл {GEOIP_DB_PATH} не найден! Будет использован упрощенный поиск.")
+
+geo_cache = {}
+
+def get_country_code(node):
+    try:
+        # Извлекаем хост
+        parsed = urlparse(node)
+        host = parsed.netloc.split('@')[-1].split(':')[0]
+        
+        if host in geo_cache:
+            return geo_cache[host]
+
+        # Если это домен, резолвим в IP (быстро)
+        ip = host
+        if not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", host):
+            ip = socket.gethostbyname(host)
+
+        if reader:
+            response = reader.country(ip)
+            code = response.country.iso_code
+            geo_cache[host] = code
+            return code
+    except:
+        pass
+    
+    # Резерв
+    return "RU" if ".ru" in node.lower() else "UN"
+
 # --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 
 def log(message):
@@ -42,17 +80,15 @@ def log(message):
     print(f"[{timestamp}] {message}")
 
 def get_flag(code):
-    if not code or code == "??": return "🌐"
+    if not code or code == "UN" or code == "??": return "🌐"
     return "".join(chr(ord(c.upper()) + 127397) for c in code)
 
 def calculate_score(config):
     score = 0
     c_l = config.lower()
-    # Приоритет протоколов
     if 'xtls-rprx-vision' in c_l: score += 120
     if 'reality' in c_l: score += 80
     if 'pbk=' in c_l: score += 60
-    # Приоритет SNI
     sni_match = re.search(r'(?:sni|peer)=([^&?#]+)', c_l)
     if sni_match:
         found_sni = sni_match.group(1)
@@ -72,74 +108,54 @@ log(f"Начинаю сбор из {len(urls)} источников...")
 for url in urls:
     try:
         r = requests.get(url, timeout=15)
-        if r.status_code != 200:
-            log(f"⚠️ Ошибка {r.status_code}: {url}")
-            continue
+        if r.status_code != 200: continue
             
         content = r.text
-        # Обработка Base64
         if "://" not in content[:100] and len(content) > 20:
             try:
                 content = base64.b64decode(content).decode('utf-8', errors='ignore')
-                log(f"🔓 Декодирован Base64: {url[:40]}...")
             except: pass
 
         lines = content.splitlines()
-        added_from_url = 0
         for line in lines:
             line = line.strip()
             if "://" in line and not line.startswith("//"):
-                # Очистка от старых имен для правильного сравнения дублей
                 key = line.split('#')[0]
                 if key not in unique_map:
                     unique_map[key] = line
                     all_nodes.append(line)
-                    added_from_url += 1
-        
-        if added_from_url > 0:
-            log(f"✅ +{added_from_url} конфигов из {url[:50]}...")
-            
-    except Exception as e:
-        log(f"❌ Ошибка на {url[:40]}: {str(e)}")
+    except: pass
 
-# Сортировка по «весу» качества
-log("Сортировка базы по качеству (XTLS/Reality/SNI)...")
+log("Сортировка базы по качеству...")
 all_nodes.sort(key=calculate_score, reverse=True)
 
 # --- ГЕНЕРАЦИЯ ФАЙЛОВ ---
 
 def finalize_and_save(filename, data, tag="", limit=None):
     if limit: data = data[:limit]
-    
     output = []
+    
     for i, node in enumerate(data):
         node_id = f"{i+1:05}"
-        country = "RU" if ".ru" in node.lower() else "UN"
+        country = get_country_code(node)
         flag = get_flag(country)
         
-        # Пересборка ссылки
         base_link = node.split('#')[0]
         new_name = f"{flag} {tag}{country}-{node_id}-HPP"
         output.append(f"{base_link}#{new_name}")
     
     with open(filename, "w", encoding="utf-8") as f:
         f.write("\n".join(output))
-    log(f"💾 Файл {filename} сохранен ({len(output)} строк)")
+    log(f"💾 {filename} готов.")
 
-# Запись всех файлов
+# Запись
 finalize_and_save("sub.txt", all_nodes, limit=10000)
 finalize_and_save("sub_lite.txt", all_nodes, limit=1000)
 finalize_and_save("shadowsocks.txt", [n for n in all_nodes if n.startswith("ss://")], limit=2000)
 finalize_and_save("vless_vmess.txt", [n for n in all_nodes if not n.startswith("ss://")], limit=5000)
 
-# Business (строгий отбор)
-log("Фильтрация Business-класса...")
 business_nodes = [n for n in all_nodes if calculate_score(n) >= 150]
 finalize_and_save("business.txt", business_nodes)
-finalize_and_save("business_lite.txt", business_nodes, limit=200)
 
-# Тематические списки
-finalize_and_save("whitelist_cable.txt", [n for n in all_nodes if 'cable' in n.lower()], tag="CABLE-")
-finalize_and_save("whitelist_mobile.txt", [n for n in all_nodes if 'mobile' in n.lower()], tag="MOB-")
-
-log(f"🚀 ВСЁ ГОТОВО. Итого уникальных конфигов: {len(all_nodes)}")
+if reader: reader.close()
+log(f"🚀 Готово. Уникальных: {len(all_nodes)}")
