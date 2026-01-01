@@ -1,4 +1,4 @@
-Name: Update Configs
+name: Update Configs
 
 on:
   schedule:
@@ -29,5 +29,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add *.txt
-          git commit -m "Update: GeoIP countries added. Total configs: $(wc -l < sub.txt)" || exit 0
+          git commit -m "Update configs" || exit 0
           git push
