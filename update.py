@@ -3,7 +3,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 from concurrent.futures import ThreadPoolExecutor
 
-# --- ТВОИ НАСТРОЙКИ (ПОЛНЫЙ СПИСОК SNI СОХРАНЕН) ---
+# --- ТВОИ НАСТРОЙКИ (ПОЛНЫЙ СПИСОК SNI) ---
 TARGET_SNI = [
     "unicreditbank.ru", "gazprombank.ru", "gpb.ru", "mkb.ru", "open.ru", "tbank.ru", 
     "rosbank.ru", "psbank.ru", "raiffeisen.ru", "rzd.ru", "dns-shop.ru", "pochta.ru", 
@@ -16,7 +16,7 @@ TARGET_SNI = [
 ]
 
 urls = [
-    "https://s3c3.001.gpucloud.ru/dg68glfr8yyyrm9hoob72l3gdu/xicrftxzsnsz", # Новый
+    "https://s3c3.001.gpucloud.ru/dg68glfr8yyyrm9hoob72l3gdu/xicrftxzsnsz",
     "https://etoneya.a9fm.site/", "https://etoneya.a9fm.site/2",
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
@@ -38,7 +38,6 @@ GEOIP_DB_PATH = 'GeoLite2-Country.mmdb'
 reader = geoip2.database.Reader(GEOIP_DB_PATH) if os.path.exists(GEOIP_DB_PATH) else None
 geo_cache, dns_cache = {}, {}
 
-# --- ЛОГИКА ОПРЕДЕЛЕНИЯ СТРАНЫ ---
 def get_country_code(node):
     try:
         parsed = urlparse(node)
@@ -56,9 +55,8 @@ def get_country_code(node):
             geo_cache[host] = code
             return code
     except: pass
-    return "RU" if ".ru" in node.lower() else "UN"
+    return "UN"
 
-# --- ТВОИ ВЕСА + НОВЫЕ ПРОТОКОЛЫ ---
 def calculate_score(config):
     score = 0
     c_l = config.lower()
@@ -68,21 +66,16 @@ def calculate_score(config):
     sni_match = re.search(r'(?:sni|peer)=([^&?#]+)', c_l)
     if sni_match:
         found_sni = sni_match.group(1)
-        if any(tsni in found_sni for tsni in TARGET_SNI):
-            score += 150
-    elif any(tsni in c_l for tsni in TARGET_SNI):
-        score += 40
+        if any(tsni in found_sni for tsni in TARGET_SNI): score += 150
     return score
 
 def patch_node(node, force_fp=False):
-    """Добавляет фингерпринт и чистит мусор"""
     base = node.split('#')[0]
     if force_fp and 'fp=' not in base:
         sep = '&' if '?' in base else '?'
         base += f"{sep}fp=chrome"
     return base
 
-# --- УНИВЕРСАЛЬНОЕ СОХРАНЕНИЕ ---
 def finalize_and_save(filename, data, tag="", limit=None, comment=None, force_fp=False):
     if limit: data = data[:limit]
     if not data: return
@@ -91,17 +84,16 @@ def finalize_and_save(filename, data, tag="", limit=None, comment=None, force_fp
     output = []
     if comment: output.append(f"# {comment}")
     for i, (node, country) in enumerate(zip(data, countries)):
-        flag = "".join(chr(ord(c.upper()) + 127397) for c in country) if country != "UN" else "🌐"
+        c_code = country if country else "UN"
+        flag = "".join(chr(ord(c.upper()) + 127397) for c in c_code) if c_code != "UN" else "🌐"
         clean_node = patch_node(node, force_fp)
-        new_name = f"{flag} {tag}{country}-{i+1:05}-HPP"
+        new_name = f"{flag} {tag}{c_code}-{i+1:05}-HPP"
         output.append(f"{clean_node}#{new_name}")
     with open(filename, "w", encoding="utf-8") as f:
         f.write("\n".join(output))
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 {filename} сохранен ({len(output)})")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 {filename} ({len(output)})")
 
-# --- СБОР И УМНАЯ ДЕДУПЛИКАЦИЯ ---
 all_collected = []
-print(f"Сбор из {len(urls)} источников...")
 for url in urls:
     try:
         r = requests.get(url, timeout=15)
@@ -115,12 +107,8 @@ for url in urls:
                 all_collected.append(line)
     except: pass
 
-# 1. Сортируем по качеству (лучшие в начало)
 all_collected.sort(key=calculate_score, reverse=True)
-
-# 2. Оставляем только лучший вариант для каждого IP:Port+Protocol
-unique_ips = set()
-unique_nodes = []
+unique_ips, unique_nodes = set(), []
 for node in all_collected:
     try:
         parts = urlparse(node)
@@ -130,29 +118,20 @@ for node in all_collected:
             unique_nodes.append(node)
     except: pass
 
-# --- ФОРМИРОВАНИЕ ФАЙЛОВ ---
-
-# 1. HARD HIDDEN (Элита для Билайна)
-hard = [n for n in unique_nodes if calculate_score(n) >= 300 and ':443' in n]
-finalize_and_save("hard_hidden.txt", hard, tag="HARD-", force_fp=True)
-
-# 2. SHADOWSOCKS (Только зарубеж)
-ss_nodes = [n for n in unique_nodes if n.startswith("ss://") and get_country_code(n) != "RU"]
-finalize_and_save("shadowsocks.txt", ss_nodes, tag="SS-")
-
-# 3. CABLE (Твой фильтр для кабеля)
-finalize_and_save("cable_whitelist.txt", [n for n in unique_nodes if 'cable' in n.lower()], tag="CABLE-")
-
-# 4. ALL CONFIGS (Генеральный архив)
+# --- СОХРАНЕНИЕ (НОВЫЕ ФАЙЛЫ) ---
+finalize_and_save("hard_hidden.txt", [n for n in unique_nodes if calculate_score(n) >= 300 and ':443' in n], tag="HARD-", force_fp=True)
+finalize_and_save("shadowsocks.txt", [n for n in unique_nodes if n.startswith("ss://") and get_country_code(n) != "RU"], tag="SS-")
+finalize_and_save("mobile_special.txt", [n for n in unique_nodes if 'mobile' in n.lower() or calculate_score(n) >= 200], tag="MOB-", comment=f"Total: {len(unique_nodes)}")
+finalize_and_save("mobile_high_quality.txt", [n for n in unique_nodes if 200 <= calculate_score(n) < 300], tag="HQ-", force_fp=True)
 finalize_and_save("all_configs.txt", unique_nodes, limit=15000)
 
-# 5. MOBILE SPECIAL (Белые списки + Счетчик)
-mob_spec = [n for n in unique_nodes if 'mobile' in n.lower() or calculate_score(n) >= 200]
-finalize_and_save("mobile_special.txt", mob_spec, tag="MOB-", comment=f"Total Mobile Nodes: {len(mob_spec)}")
-
-# 6. MOBILE HIGH QUALITY (Золотая середина)
-mob_hq = [n for n in unique_nodes if 200 <= calculate_score(n) < 300]
-finalize_and_save("mobile_high_quality.txt", mob_hq, tag="HQ-", force_fp=True)
+# --- СОХРАНЕНИЕ (СТАРЫЕ ФАЙЛЫ ДЛЯ СОВМЕСТИМОСТИ) ---
+finalize_and_save("sub.txt", unique_nodes, limit=10000)
+finalize_and_save("sub_lite.txt", unique_nodes, limit=1000)
+finalize_and_save("business.txt", [n for n in unique_nodes if calculate_score(n) >= 150])
+finalize_and_save("vless_vmess.txt", [n for n in unique_nodes if not n.startswith("ss://")], limit=5000)
+finalize_and_save("whitelist_cable.txt", [n for n in unique_nodes if 'cable' in n.lower()], tag="CABLE-")
+finalize_and_save("whitelist_mobile.txt", [n for n in unique_nodes if 'mobile' in n.lower()], tag="MOB-")
 
 if reader: reader.close()
 print(f"🚀 ВСЕ ГОТОВО. Уникальных серверов: {len(unique_nodes)}")
