@@ -1,4 +1,4 @@
-name: Update Configs
+Name: Update Configs
 
 on:
   schedule:
@@ -34,6 +34,16 @@ jobs:
           fi
 
       - name: Run update script
+        run: python update.py
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          # Заменяем выборку только .txt на добавление ВСЕХ измененных файлов
+          git add -A 
+          git commit -m "Update configs & reputation: $(date +'%Y-%m-%d %H:%M')" || exit 0
+          git push
         run: python update.py
 
       - name: Commit and Push
