@@ -21,8 +21,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        run: |
-          pip install requests geoip2
+        run: pip install requests geoip2
 
       - name: Check database file
         run: |
@@ -42,23 +41,4 @@ jobs:
           git config --local user.name "GitHub Action"
           git add -A
           git commit -m "Update configs & reputation: $(date +'%Y-%m-%d %H:%M')" || exit 0
-          git push
-        run: python update.py
-
-      - name: Commit and Push
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          # Заменяем выборку только .txt на добавление ВСЕХ измененных файлов
-          git add -A 
-          git commit -m "Update configs & reputation: $(date +'%Y-%m-%d %H:%M')" || exit 0
-          git push
-        run: python update.py
-
-      - name: Commit and Push
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add *.txt
-          git commit -m "Update configs: $(date +'%Y-%m-%d %H:%M')" || exit 0
           git push
