@@ -44,7 +44,6 @@ TARGET_SNI = list(set([
     "vk.com", "www.wildberries.ru", "www.ozon.ru", "ok.ru", "yandex.ru"
 ]))
 
-# Оставил только реально вредные SNI
 BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn']
 ELITE_PORTS = ['2053', '2083', '2087', '2096']
 CHAMPION_HOSTS = ['yandex', 'selectel', 'timeweb', 'firstbyte', 'gcore', 'vkcloud', 'mail.ru']
@@ -104,17 +103,14 @@ class MetaAggregator:
         rep_data = self.reputation.get(node_id, {})
         score += rep_data.get('count', 0) * 50
 
-        # Протоколы
         if 'xtls-rprx-vision' in n_l: score += 150
         if any(p in n_l for p in ['type=xhttp', 'mode=stream-up', 'tuic', 'hysteria2', 'hy2']): score += 250
         if 'trojan' in n_l: score += 100
         
-        # Порты
         port = parsed.netloc.split(':')[-1] if ':' in parsed.netloc else '443'
         if port in ELITE_PORTS: score += 250
         elif port == '443': score += 100
 
-        # SNI Анализ
         sni_match = re.search(r'sni=([^&?#\s]+)', n_l)
         if sni_match:
             sni = sni_match.group(1).strip('.')
@@ -151,10 +147,8 @@ class MetaAggregator:
             if self.reader:
                 try:
                     res = self.reader.country(ip)
-                    if res.country.iso_code:
-                        code = res.country.iso_code
+                    if res.country.iso_code: code = res.country.iso_code
                 except: pass
-            
             self.geo_cache[host] = code
             return code
         except: return "UN"
@@ -188,12 +182,18 @@ def main():
 
     unique_map = {}
     for node in raw_nodes:
+        # Фильтрация мусорных IP
+        if any(trash in node for trash in ["0.0.0.0", "127.0.0.1"]):
+            continue
+            
         try:
-            p = urlparse(node)
+            # Отрезаем всё лишнее сразу (чистим хвост #)
+            base_link = node.split('#')[0]
+            p = urlparse(base_link)
             ip_key = f"{p.scheme}@{p.netloc.split('@')[-1].split(':')[0]}"
-            score = agg.calculate_score(node)
+            score = agg.calculate_score(base_link)
             if ip_key not in unique_map or score > unique_map[ip_key]['score']:
-                unique_map[ip_key] = {'node': node, 'score': score}
+                unique_map[ip_key] = {'node': base_link, 'score': score}
         except: continue
     
     sorted_nodes = sorted(unique_map.values(), key=lambda x: x['score'], reverse=True)
@@ -207,23 +207,22 @@ def main():
     
     print("Обработка воронки ТОП-5000...")
     for i, node in enumerate(vless_pool):
-        node_id = agg.get_node_id(node)
-        rep_entry = agg.reputation.get(node_id, {"count": 0, "last_seen": now_ts})
+        node_id_hash = agg.get_node_id(node)
+        rep_entry = agg.reputation.get(node_id_hash, {"count": 0, "last_seen": now_ts})
         rep_entry["count"] += 1
         rep_entry["last_seen"] = now_ts
-        agg.reputation[node_id] = rep_entry
+        agg.reputation[node_id_hash] = rep_entry
         
         geo = agg.get_geo(node)
         patched = agg.patch(node)
         score = agg.calculate_score(node)
         
-        rep_count = rep_entry["count"]
-        rep_label = f"({rep_count})" if rep_count > 1 else ""
-        
-        # Защита от NoneType объекта в итерации флага
+        rep_val = rep_entry["count"]
         geo_str = str(geo) if geo else "UN"
         flag = "".join(chr(ord(c.upper()) + 127397) for c in geo_str) if geo_str != "UN" else "🌐"
-        name = f"{flag} {geo_str}{rep_label}-{i+1:05}"
+        
+        # ЭТАЛОННЫЙ НЕЙМИНГ: 🇷🇺 RU-00001-REP(1)-HPP ELITE
+        name = f"{flag} {geo_str}-{i+1:05}-REP({rep_val})-HPP ELITE"
         
         processed_vless.append({'node': f"{patched}#{name}", 'geo': geo_str, 'score': score, 'raw': node})
 
@@ -253,7 +252,8 @@ def main():
         json.dump(agg.reputation, f, indent=2)
         
     if agg.reader: agg.reader.close()
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Скрипт завершен успешно.")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Скрипт завершен.")
 
 if __name__ == "__main__":
     main()
+ 
