@@ -1,137 +1,247 @@
-import requests, base64, re, os, sys, socket, geoip2.database
+import requests, base64, re, os, socket, geoip2.database, json, hashlib, shutil, time
 from datetime import datetime
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from concurrent.futures import ThreadPoolExecutor
 
-# --- ТВОИ НАСТРОЙКИ (ПОЛНЫЙ СПИСОК SNI) ---
-TARGET_SNI = [
-    "unicreditbank.ru", "gazprombank.ru", "gpb.ru", "mkb.ru", "open.ru", "tbank.ru", 
-    "rosbank.ru", "psbank.ru", "raiffeisen.ru", "rzd.ru", "dns-shop.ru", "pochta.ru", 
-    "x5.ru", "ivi.ru", "hh.ru", "kp.ru", "ria.ru", "lenta.ru", "rambler.ru", "rbc.ru", 
-    "yandex.net", "pikabu.ru", "tutu.ru", "apteka.ru", "drom.ru", "farpost.ru", 
-    "drive2.ru", "lemanapro.ru", "vk-portal.net", "userapi.com", "vk.com", "mail.ru", 
-    "ozone.ru", "ozon.ru", "sberbank.ru", "wildberries.ru", "alfabank.ru", "tinkoff.ru", 
-    "mts.ru", "megafon.ru", "t2.ru", "beeline.ru", "dzen.ru", "avito.ru", "rutube.ru", 
-    "kinopoisk.ru", "magnit.com", "2gis.ru", "ok.ru", "yandex.ru"
-]
+# --- НАСТРОЙКИ ---
+TARGET_SNI = list(set([
+    "www.unicreditbank.ru", "www.gazprombank.ru", "cdn.gpb.ru", "mkb.ru", "www.open.ru",
+    "cobrowsing.tbank.ru", "cdn.rosbank.ru", "www.psbank.ru", "www.raiffeisen.ru",
+    "www.rzd.ru", "st.gismeteo.st", "stat-api.gismeteo.net", "c.dns-shop.ru",
+    "restapi.dns-shop.ru", "www.pochta.ru", "passport.pochta.ru", "chat-ct.pochta.ru",
+    "www.x5.ru", "www.ivi.ru", "api2.ivi.ru", "hh.ru", "i.hh.ru", "hhcdn.ru",
+    "sentry.hh.ru", "cpa.hh.ru", "www.kp.ru", "cdnn21.img.ria.ru", "lenta.ru",
+    "sync.rambler.ru", "s.rbk.ru", "www.rbc.ru", "target.smi2.net", "hb-bidder.skcrtxr.com",
+    "strm-spbmiran-07.strm.yandex.net", "pikabu.ru", "www.tutu.ru", "cdn1.tu-tu.ru",
+    "api.apteka.ru", "static.apteka.ru", "images.apteka.ru", "scitylana.apteka.ru",
+    "www.drom.ru", "c.rdrom.ru", "www.farpost.ru", "s11.auto.drom.ru", "i.rdrom.ru",
+    "yummy.drom.ru", "www.drive2.ru", "lemanapro.ru", "stats.vk-portal.net",
+    "sun6-21.userapi.com", "sun6-20.userapi.com", "avatars.mds.yandex.net",
+    "queuev4.vk.com", "sun6-22.userapi.com", "sync.browser.yandex.net", "top-fwz1.mail.ru",
+    "ad.mail.ru", "eh.vk.com", "akashi.vk-portal.net", "sun9-38.userapi.com",
+    "st.ozone.ru", "ir.ozone.ru", "vt-1.ozone.ru", "io.ozone.ru", "ozone.ru",
+    "xapi.ozon.ru", "strm-rad-23.strm.yandex.net", "online.sberbank.ru",
+    "esa-res.online.sberbank.ru", "egress.yandex.net", "st.okcdn.ru", "rs.mail.ru",
+    "counter.yadro.ru", "742231.ms.ok.ru", "splitter.wb.ru", "a.wb.ru",
+    "user-geo-data.wildberries.ru", "banners-website.wildberries.ru",
+    "chat-prod.wildberries.ru", "servicepipe.ru", "alfabank.ru", "statad.ru",
+    "alfabank.servicecdn.ru", "alfabank.st", "ad.adriver.ru", "privacy-cs.mail.ru",
+    "imgproxy.cdn-tinkoff.ru", "mddc.tinkoff.ru", "le.tbank.ru", "hrc.tbank.ru",
+    "id.tbank.ru", "rap.skcrtxr.com", "eye.targetads.io", "px.adhigh.net", "nspk.ru",
+    "sba.yandex.net", "identitystatic.mts.ru", "tag.a.mts.ru", "login.mts.ru",
+    "serving.a.mts.ru", "cm.a.mts.ru", "login.vk.com", "api.a.mts.ru", "mtscdn.ru",
+    "d5de4k0ri8jba7ucdbt6.apigw.yandexcloud.net", "moscow.megafon.ru", "api.mindbox.ru",
+    "web-static.mindbox.ru", "storage.yandexcloud.net", "personalization-web-stable.mindbox.ru",
+    "www.t2.ru", "beeline.api.flocktory.com", "static.beeline.ru", "moskva.beeline.ru",
+    "wcm.weborama-tech.ru", "1013a--ma--8935--cp199.stbid.ru", "msk.t2.ru", "s3.t2.ru",
+    "get4click.ru", "dzen.ru", "yastatic.net", "csp.yandex.net", "sntr.avito.ru",
+    "yabro-wbplugin.edadeal.yandex.ru", "cdn.uxfeedback.ru", "goya.rutube.ru",
+    "api.expf.ru", "fb-cdn.premier.one", "www.kinopoisk.ru", "widgets.kinopoisk.ru",
+    "payment-widget.plus.kinopoisk.ru", "api.events.plus.yandex.net", "tns-counter.ru",
+    "speller.yandex.net", "widgets.cbonds.ru", "www.magnit.com", "magnit-ru.injector.3ebra.net",
+    "jsons.injector.3ebra.net", "2gis.ru", "d-assets.2gis.ru", "s1.bss.2gis.com",
+    "www.tbank.ru", "strm-spbmiran-08.strm.yandex.net", "id.tbank.ru", "tmsg.tbank.ru",
+    "vk.com", "www.wildberries.ru", "www.ozon.ru", "ok.ru", "yandex.ru"
+]))
+
+# Оставил только реально вредные SNI
+BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn']
+ELITE_PORTS = ['2053', '2083', '2087', '2096']
+CHAMPION_HOSTS = ['yandex', 'selectel', 'timeweb', 'firstbyte', 'gcore', 'vkcloud', 'mail.ru']
 
 urls = [
     "https://s3c3.001.gpucloud.ru/dg68glfr8yyyrm9hoob72l3gdu/xicrftxzsnsz",
-    "https://etoneya.a9fm.site/", "https://etoneya.a9fm.site/2",
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
-    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_VLESS_RUS.txt",
-    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_SS+All_RUS.txt",
-    "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
-    "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt",
-    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/whitelist.txt",
-    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/blacklist.txt",
-    "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
-    "https://raw.githubusercontent.com/vsevjik/OBSpiskov/refs/heads/main/wwh",
+    "https://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt",
+    "https://fsub.flux.2bd.net/githubmirror/bypass-unsecure/bypass-unsecure-all.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/vmess.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/trojan.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/tuic.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/ssr.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria2.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hy2.txt",
     "https://sub-aggregator.vercel.app/"
 ]
-for i in range(1, 27):
-    urls.append(f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt")
 
-GEOIP_DB_PATH = 'GeoLite2-Country.mmdb'
-reader = geoip2.database.Reader(GEOIP_DB_PATH) if os.path.exists(GEOIP_DB_PATH) else None
-geo_cache, dns_cache = {}, {}
+class MetaAggregator:
+    def __init__(self):
+        self.rep_path = 'reputation.json'
+        self.reputation = self._load_json(self.rep_path)
+        self.geo_cache = {}
+        self.reader = geoip2.database.Reader('GeoLite2-Country.mmdb') if os.path.exists('GeoLite2-Country.mmdb') else None
 
-def get_country_code(node):
-    try:
+    def _load_json(self, path):
+        if os.path.exists(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    for k, v in data.items():
+                        if isinstance(v, int): data[k] = {"count": v, "last_seen": int(time.time())}
+                    return data
+            except: return {}
+        return {}
+
+    def get_node_id(self, node):
+        return hashlib.md5(node.split('#')[0].encode()).hexdigest()
+
+    def get_fp(self, node):
+        hash_val = int(self.get_node_id(node), 16)
+        choice = hash_val % 100
+        if choice < 65: return "chrome"
+        if choice < 85: return "edge"
+        if choice < 95: return "safari"
+        return "ios"
+
+    def calculate_score(self, node):
+        score = 0
+        n_l = node.lower()
         parsed = urlparse(node)
-        host = parsed.netloc.split('@')[-1].split(':')[0]
-        if host in geo_cache: return geo_cache[host]
-        if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", host):
-            ip = host
-        else:
-            if host not in dns_cache:
-                dns_cache[host] = socket.gethostbyname(host)
-            ip = dns_cache[host]
-        if reader:
-            response = reader.country(ip)
-            code = response.country.iso_code
-            geo_cache[host] = code
+        
+        node_id = self.get_node_id(node)
+        rep_data = self.reputation.get(node_id, {})
+        score += rep_data.get('count', 0) * 50
+
+        # Протоколы
+        if 'xtls-rprx-vision' in n_l: score += 150
+        if any(p in n_l for p in ['type=xhttp', 'mode=stream-up', 'tuic', 'hysteria2', 'hy2']): score += 250
+        if 'trojan' in n_l: score += 100
+        
+        # Порты
+        port = parsed.netloc.split(':')[-1] if ':' in parsed.netloc else '443'
+        if port in ELITE_PORTS: score += 250
+        elif port == '443': score += 100
+
+        # SNI Анализ
+        sni_match = re.search(r'sni=([^&?#\s]+)', n_l)
+        if sni_match:
+            sni = sni_match.group(1).strip('.')
+            if any(s in sni for s in BLACK_SNI): score -= 2000
+            if any(ts == sni or sni.endswith('.'+ts) for ts in TARGET_SNI): score += 300
+        
+        if any(h in parsed.netloc for h in CHAMPION_HOSTS): score += 50
+        return score
+
+    def patch(self, node):
+        try:
+            parsed = urlparse(node)
+            query = parse_qs(parsed.query)
+            if node.startswith(('vless', 'vmess', 'trojan')):
+                query['fp'] = [self.get_fp(node)]
+                if 'alpn' not in query: query['alpn'] = ['h2,http/1.1']
+                net_type = query.get('type', [''])[0]
+                if net_type == 'ws' and 'path' not in query: query['path'] = ['/graphql']
+                if net_type == 'grpc' and 'serviceName' not in query: query['serviceName'] = ['grpc']
+            
+            new_query = urlencode(query, doseq=True)
+            return urlunparse(parsed._replace(query=new_query))
+        except: return node
+
+    def get_geo(self, node):
+        host = urlparse(node).netloc.split('@')[-1].split(':')[0]
+        if host in self.geo_cache: return self.geo_cache[host]
+        try:
+            ip = socket.gethostbyname(host) if not re.match(r"^\d", host) else host
+            code = self.reader.country(ip).country.iso_code if self.reader else "UN"
+            self.geo_cache[host] = code
             return code
-    except: pass
-    return "UN"
+        except: return "UN"
 
-def calculate_score(config):
-    score = 0
-    c_l = config.lower()
-    if any(p in c_l for p in ['xtls-rprx-vision', 'hysteria2', 'hy2']): score += 150
-    if any(p in c_l for p in ['reality', 'trojan']): score += 100
-    if ':443' in c_l: score += 50
-    sni_match = re.search(r'(?:sni|peer)=([^&?#]+)', c_l)
-    if sni_match:
-        found_sni = sni_match.group(1)
-        if any(tsni in found_sni for tsni in TARGET_SNI): score += 150
-    return score
+    def cleanup_reputation(self, max_age_days=30, max_entries=10000):
+        now = int(time.time())
+        cutoff = now - (max_age_days * 86400)
+        clean_db = {k: v for k, v in self.reputation.items() if v.get('last_seen', 0) > cutoff}
+        if len(clean_db) > max_entries:
+            sorted_rep = sorted(clean_db.items(), key=lambda x: x[1]['count'], reverse=True)
+            clean_db = dict(sorted_rep[:max_entries])
+        self.reputation = clean_db
 
-def patch_node(node, force_fp=False):
-    base = node.split('#')[0]
-    if force_fp and 'fp=' not in base:
-        sep = '&' if '?' in base else '?'
-        base += f"{sep}fp=chrome"
-    return base
-
-def finalize_and_save(filename, data, tag="", limit=None, comment=None, force_fp=False):
-    if limit: data = data[:limit]
-    if not data: return
-    with ThreadPoolExecutor(max_workers=50) as ex:
-        countries = list(ex.map(get_country_code, data))
-    output = []
-    if comment: output.append(f"# {comment}")
-    for i, (node, country) in enumerate(zip(data, countries)):
-        c_code = country if country else "UN"
-        flag = "".join(chr(ord(c.upper()) + 127397) for c in c_code) if c_code != "UN" else "🌐"
-        clean_node = patch_node(node, force_fp)
-        new_name = f"{flag} {tag}{c_code}-{i+1:05}-HPP"
-        output.append(f"{clean_node}#{new_name}")
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write("\n".join(output))
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 {filename} ({len(output)})")
-
-all_collected = []
-for url in urls:
-    try:
-        r = requests.get(url, timeout=15)
-        content = r.text
+def main():
+    agg = MetaAggregator()
+    
+    def fetch(url):
+        try: return requests.get(url, timeout=15).text
+        except: return ""
+    
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚡ Сбор источников...")
+    with ThreadPoolExecutor(max_workers=20) as ex:
+        results = list(ex.map(fetch, urls))
+    
+    raw_nodes = []
+    for content in results:
         if "://" not in content[:100]:
             try: content = base64.b64decode(content).decode('utf-8', errors='ignore')
             except: pass
-        for line in content.splitlines():
-            line = line.strip()
-            if "://" in line and not line.startswith("//"):
-                all_collected.append(line)
-    except: pass
+        raw_nodes.extend([l.strip() for l in content.splitlines() if "://" in l and not l.startswith("//")])
 
-all_collected.sort(key=calculate_score, reverse=True)
-unique_ips, unique_nodes = set(), []
-for node in all_collected:
+    unique_map = {}
+    for node in raw_nodes:
+        try:
+            p = urlparse(node)
+            ip_key = f"{p.scheme}@{p.netloc.split('@')[-1].split(':')[0]}"
+            score = agg.calculate_score(node)
+            if ip_key not in unique_map or score > unique_map[ip_key]['score']:
+                unique_map[ip_key] = {'node': node, 'score': score}
+        except: continue
+    
+    sorted_nodes = sorted(unique_map.values(), key=lambda x: x['score'], reverse=True)
+    all_unique = [v['node'] for v in sorted_nodes]
+
+    vless_pool = [n for n in all_unique if not n.startswith('ss://')][:5000]
+    ss_pool = [n for n in all_unique if n.startswith('ss://')]
+    
+    processed_vless = []
+    now_ts = int(time.time())
+    
+    print("Обработка воронки ТОП-5000...")
+    for i, node in enumerate(vless_pool):
+        node_id = agg.get_node_id(node)
+        rep_entry = agg.reputation.get(node_id, {"count": 0, "last_seen": now_ts})
+        rep_entry["count"] += 1
+        rep_entry["last_seen"] = now_ts
+        agg.reputation[node_id] = rep_entry
+        
+        geo = agg.get_geo(node)
+        patched = agg.patch(node)
+        score = agg.calculate_score(node)
+        
+        rep_count = rep_entry["count"]
+        rep_label = f"({rep_count})" if rep_count > 1 else ""
+        flag = "".join(chr(ord(c.upper()) + 127397) for c in geo) if geo != "UN" else "🌐"
+        name = f"{flag} {geo}{rep_label}-{i+1:05}"
+        
+        processed_vless.append({'node': f"{patched}#{name}", 'geo': geo, 'score': score, 'raw': node})
+
+    def save(file, data):
+        if not data: return
+        with open(file, 'w', encoding='utf-8') as f: f.write("\n".join(data))
+        print(f"💾 {file}: {len(data)}")
+
+    save("hard_hidden.txt", [n['node'] for n in processed_vless[:1000] if n['score'] >= 500])
+    save("mob.txt", [n['node'] for n in processed_vless if n['score'] >= 300][:1000])
+    save("med.txt", [n['node'] for n in processed_vless if 150 <= n['score'] < 450][:2000])
+    save("vls.txt", [n['node'] for n in processed_vless])
+    save("ss.txt", [n for n in ss_pool if agg.get_geo(n) != "RU"][:2000])
+    save("all.txt", all_unique[:25000])
+    save("whitelist_cable.txt", [n['node'] for n in processed_vless if 'cable' in n['raw'].lower()])
+    save("whitelist_mobile.txt", [n['node'] for n in processed_vless if 'mobile' in n['raw'].lower()])
+
     try:
-        parts = urlparse(node)
-        addr_key = f"{parts.scheme}://{parts.netloc.split('@')[-1]}" 
-        if addr_key not in unique_ips:
-            unique_ips.add(addr_key)
-            unique_nodes.append(node)
+        shutil.copy("hard_hidden.txt", "business.txt")
+        shutil.copy("vls.txt", "vless_vmess.txt")
+        shutil.copy("all.txt", "sub.txt")
+        shutil.copy("all.txt", "all_configs.txt")
     except: pass
 
-# --- СОХРАНЕНИЕ (НОВЫЕ ФАЙЛЫ) ---
-finalize_and_save("hard_hidden.txt", [n for n in unique_nodes if calculate_score(n) >= 300 and ':443' in n], tag="HARD-", force_fp=True)
-finalize_and_save("shadowsocks.txt", [n for n in unique_nodes if n.startswith("ss://") and get_country_code(n) != "RU"], tag="SS-")
-finalize_and_save("mobile_special.txt", [n for n in unique_nodes if 'mobile' in n.lower() or calculate_score(n) >= 200], tag="MOB-", comment=f"Total: {len(unique_nodes)}")
-finalize_and_save("mobile_high_quality.txt", [n for n in unique_nodes if 200 <= calculate_score(n) < 300], tag="HQ-", force_fp=True)
-finalize_and_save("all_configs.txt", unique_nodes, limit=15000)
+    agg.cleanup_reputation()
+    with open(agg.rep_path, 'w', encoding='utf-8') as f:
+        json.dump(agg.reputation, f, indent=2)
+        
+    if agg.reader: agg.reader.close()
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Скрипт завершен успешно.")
 
-# --- СОХРАНЕНИЕ (СТАРЫЕ ФАЙЛЫ ДЛЯ СОВМЕСТИМОСТИ) ---
-finalize_and_save("sub.txt", unique_nodes, limit=10000)
-finalize_and_save("sub_lite.txt", unique_nodes, limit=1000)
-finalize_and_save("business.txt", [n for n in unique_nodes if calculate_score(n) >= 150])
-finalize_and_save("vless_vmess.txt", [n for n in unique_nodes if not n.startswith("ss://")], limit=5000)
-finalize_and_save("whitelist_cable.txt", [n for n in unique_nodes if 'cable' in n.lower()], tag="CABLE-")
-finalize_and_save("whitelist_mobile.txt", [n for n in unique_nodes if 'mobile' in n.lower()], tag="MOB-")
-
-if reader: reader.close()
-print(f"🚀 ВСЕ ГОТОВО. Уникальных серверов: {len(unique_nodes)}")
+if __name__ == "__main__":
+    main()
+ 
