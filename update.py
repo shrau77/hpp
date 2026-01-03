@@ -49,10 +49,28 @@ ELITE_PORTS = ['2053', '2083', '2087', '2096']
 CHAMPION_HOSTS = ['yandex', 'selectel', 'timeweb', 'firstbyte', 'gcore', 'vkcloud', 'mail.ru']
 
 urls = [
+    # Твои личные S3 источники
     "https://s3c3.001.gpucloud.ru/dg68glfr8yyyrm9hoob72l3gdu/xicrftxzsnsz",
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
+    
+    # igareck (White & Black Lists Rus)
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
+    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_SS%2BAll_RUS.txt",
+    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_VLESS_RUS.txt",
+    
+    # zieng2 (WL specialized)
+    "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
+    "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt",
+    
+    # 55prosek-lgtm
+    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/whitelist.txt",
+    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/blacklist.txt",
+    
+    # vlesscollector
+    "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
+    
+    # Стандартные агрегаторы
     "https://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt",
     "https://fsub.flux.2bd.net/githubmirror/bypass-unsecure/bypass-unsecure-all.txt",
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/vmess.txt",
@@ -62,7 +80,10 @@ urls = [
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria.txt",
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria2.txt",
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hy2.txt",
-    "https://sub-aggregator.vercel.app/"
+    "https://sub-aggregator.vercel.app/",
+
+    # Goida Vpn Configs (AvenCores) - прописал их циклом для чистоты
+    *[f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" for i in range(1, 27)]
 ]
 
 class MetaAggregator:
@@ -257,3 +278,4 @@ def main():
 if __name__ == "__main__":
     main()
  
+
