@@ -1,4 +1,4 @@
-Name: Update Configs
+name: Update Configs
 
 on:
   schedule:
@@ -29,11 +29,20 @@ jobs:
           if [ -f "GeoLite2-Country.mmdb" ]; then
             echo "✅ База найдена"
           else
-            echo "❌ ФАЙЛ БАЗЫ НЕ НАЙДЕН! Проверь, что он лежит в корне репозитория"
+            echo "❌ ФАЙЛ БАЗЫ НЕ НАЙДЕН!"
             exit 1
           fi
 
       - name: Run update script
+        run: python update.py
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git commit -m "Update configs & reputation: $(date +'%Y-%m-%d %H:%M')" || exit 0
+          git push
         run: python update.py
 
       - name: Commit and Push
