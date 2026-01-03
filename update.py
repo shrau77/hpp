@@ -140,11 +140,21 @@ class MetaAggregator:
         except: return node
 
     def get_geo(self, node):
-        host = urlparse(node).netloc.split('@')[-1].split(':')[0]
-        if host in self.geo_cache: return self.geo_cache[host]
         try:
+            parsed = urlparse(node)
+            host = parsed.netloc.split('@')[-1].split(':')[0]
+            if not host: return "UN"
+            if host in self.geo_cache: return self.geo_cache[host]
+            
             ip = socket.gethostbyname(host) if not re.match(r"^\d", host) else host
-            code = self.reader.country(ip).country.iso_code if self.reader else "UN"
+            code = "UN"
+            if self.reader:
+                try:
+                    res = self.reader.country(ip)
+                    if res.country.iso_code:
+                        code = res.country.iso_code
+                except: pass
+            
             self.geo_cache[host] = code
             return code
         except: return "UN"
@@ -209,10 +219,13 @@ def main():
         
         rep_count = rep_entry["count"]
         rep_label = f"({rep_count})" if rep_count > 1 else ""
-        flag = "".join(chr(ord(c.upper()) + 127397) for c in geo) if geo != "UN" else "🌐"
-        name = f"{flag} {geo}{rep_label}-{i+1:05}"
         
-        processed_vless.append({'node': f"{patched}#{name}", 'geo': geo, 'score': score, 'raw': node})
+        # Защита от NoneType объекта в итерации флага
+        geo_str = str(geo) if geo else "UN"
+        flag = "".join(chr(ord(c.upper()) + 127397) for c in geo_str) if geo_str != "UN" else "🌐"
+        name = f"{flag} {geo_str}{rep_label}-{i+1:05}"
+        
+        processed_vless.append({'node': f"{patched}#{name}", 'geo': geo_str, 'score': score, 'raw': node})
 
     def save(file, data):
         if not data: return
@@ -244,4 +257,3 @@ def main():
 
 if __name__ == "__main__":
     main()
- 
