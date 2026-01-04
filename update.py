@@ -48,30 +48,18 @@ BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twit
 ELITE_PORTS = ['2053', '2083', '2087', '2096']
 CHAMPION_HOSTS = ['yandex', 'selectel', 'timeweb', 'firstbyte', 'gcore', 'vkcloud', 'mail.ru']
 
-# --- ВАШИ URL ИСТОЧНИКОВ (ВОССТАНОВЛЕНО) ---
 urls = [
-    # Твои личные S3 источники
     "https://s3c3.001.gpucloud.ru/dg68glfr8yyyrm9hoob72l3gdu/xicrftxzsnsz",
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
-    
-    # igareck (White & Black Lists Rus)
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_SS%2BAll_RUS.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_VLESS_RUS.txt",
-    
-    # zieng2 (WL specialized)
     "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
     "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt",
-    
-    # 55prosek-lgtm
     "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/whitelist.txt",
     "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/blacklist.txt",
-    
-    # vlesscollector
     "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
-    
-    # Стандартные агрегаторы
     "https://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt",
     "https://fsub.flux.2bd.net/githubmirror/bypass-unsecure/bypass-unsecure-all.txt",
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/vmess.txt",
@@ -82,8 +70,6 @@ urls = [
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria2.txt",
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hy2.txt",
     "https://sub-aggregator.vercel.app/",
-
-    # Goida Vpn Configs (AvenCores)
     *[f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" for i in range(1, 27)]
 ]
 
@@ -145,126 +131,85 @@ class MetaAggregator:
 
     def patch(self, node):
         try:
-        parsed = urlparse(node)
-        query = parse_qs(parsed.query)
-        
-        # ОБРАБОТКА VMESS
-        if node.startswith('vmess://'):
-            base_part = node[8:].split('?')[0]
+            parsed = urlparse(node)
+            query = parse_qs(parsed.query)
             
-            if not base_part or len(base_part) < 5:
-                return node
-            
-            # 1. Проверяем UUID формат
-            uuid_match = re.match(r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}', base_part.lower())
-            if uuid_match:
-                if query:
-                    new_query = urlencode(query, doseq=True)
-                    return urlunparse(parsed._replace(query=new_query))
-                return node
-            
-            # 2. Проверяем формат UUID@host
-            uuid_host_match = re.match(r'^[a-f0-9-]+@[^@]+$', base_part.lower())
-            if uuid_host_match:
-                if query:
-                    new_query = urlencode(query, doseq=True)
-                    return urlunparse(parsed._replace(query=new_query))
-                return node
-            
-            # 3. Пытаемся декодировать как Base64
-            try:
-                base_part_clean = base_part.strip()
-                missing_padding = len(base_part_clean) % 4
-                if missing_padding:
-                    base_part_clean += '=' * (4 - missing_padding)
+            # ОБРАБОТКА VMESS
+            if node.startswith('vmess://'):
+                base_part = node[8:].split('?')[0]
                 
-                decoded = base64.b64decode(base_part_clean, validate=True)
-                
-                try:
-                    json_str = decoded.decode('utf-8')
-                except UnicodeDecodeError:
-                    json_str = decoded.decode('latin-1')
-                
-                try:
-                    config = json.loads(json_str)
-                except json.JSONDecodeError:
+                if not base_part or len(base_part) < 5:
                     return node
                 
-                # Исправляем некорректный type
-                type_val = config.get('type', '')
-                if type_val == '---':
-                    config['type'] = 'none'
+                # 1. Проверяем UUID формат
+                uuid_match = re.match(r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}', base_part.lower())
+                if uuid_match:
+                    if query:
+                        new_query = urlencode(query, doseq=True)
+                        return urlunparse(parsed._replace(query=new_query))
+                    return node
                 
-                # Переносим параметры из query в JSON
-                if query:
-                    if 'fp' in query and query['fp'][0]:
-                        config['fp'] = query['fp'][0]
-                    elif not config.get('fp'):
-                        config['fp'] = self.get_fp(node)
+                # 2. Проверяем формат UUID@host
+                uuid_host_match = re.match(r'^[a-f0-9-]+@[^@]+$', base_part.lower())
+                if uuid_host_match:
+                    if query:
+                        new_query = urlencode(query, doseq=True)
+                        return urlunparse(parsed._replace(query=new_query))
+                    return node
+                
+                # 3. Пытаемся декодировать как Base64
+                try:
+                    base_part_clean = base_part.strip()
+                    missing_padding = len(base_part_clean) % 4
+                    if missing_padding:
+                        base_part_clean += '=' * (4 - missing_padding)
                     
-                    if 'alpn' in query and query['alpn'][0]:
-                        config['alpn'] = query['alpn'][0]
-                    elif not config.get('alpn'):
-                        config['alpn'] = 'h2,http/1.1'
+                    decoded = base64.b64decode(base_part_clean, validate=True)
                     
-                    for key in ['sni', 'host', 'path', 'serviceName']:
-                        if key in query and query[key][0] and not config.get(key):
-                            config[key] = query[key][0]
-                else:
-                    if not config.get('fp'):
-                        config['fp'] = self.get_fp(node)
-                    if not config.get('alpn'):
-                        config['alpn'] = 'h2,http/1.1'
-                
-                new_json = json.dumps(config, separators=(',', ':'))
-                new_base64 = base64.b64encode(new_json.encode()).decode().rstrip('=')
-                
-                return f"vmess://{new_base64}"
-                
-            except Exception:
-                return node
-        
-        # ОБРАБОТКА VLESS/TROJAN
-        elif node.startswith(('vless', 'trojan')):
-            if not query.get('fp'):
-                query['fp'] = [self.get_fp(node)]
-            if not query.get('alpn'):
-                query['alpn'] = ['h2,http/1.1']
+                    try:
+                        json_str = decoded.decode('utf-8')
+                    except UnicodeDecodeError:
+                        json_str = decoded.decode('latin-1')
+                    
+                    try:
+                        config = json.loads(json_str)
+                    except json.JSONDecodeError:
+                        return node
+                    
+                    # Исправляем некорректный type
+                    type_val = config.get('type', '')
+                    if type_val == '---':
+                        config['type'] = 'none'
+                    
+                    # Переносим параметры из query в JSON
+                    if query:
+                        if 'fp' in query and query['fp'][0]:
+                            config['fp'] = query['fp'][0]
+                        elif not config.get('fp'):
+                            config['fp'] = self.get_fp(node)
+                        
+                        if 'alpn' in query and query['alpn'][0]:
+                            config['alpn'] = query['alpn'][0]
+                        elif not config.get('alpn'):
+                            config['alpn'] = 'h2,http/1.1'
+                        
+                        for key in ['sni', 'host', 'path', 'serviceName']:
+                            if key in query and query[key][0] and not config.get(key):
+                                config[key] = query[key][0]
+                    else:
+                        if not config.get('fp'):
+                            config['fp'] = self.get_fp(node)
+                        if not config.get('alpn'):
+                            config['alpn'] = 'h2,http/1.1'
+                    
+                    new_json = json.dumps(config, separators=(',', ':'))
+                    new_base64 = base64.b64encode(new_json.encode()).decode().rstrip('=')
+                    
+                    return f"vmess://{new_base64}"
+                    
+                except Exception:
+                    return node
             
-            net_type = query.get('type', [''])[0]
-            if net_type == 'ws' and not query.get('path'):
-                query['path'] = ['/graphql']
-            if net_type == 'grpc' and not query.get('serviceName'):
-                query['serviceName'] = ['grpc']
-            
-            new_query = urlencode(query, doseq=True)
-            return urlunparse(parsed._replace(query=new_query))
-        
-        return node
-        
-    except Exception:
-        return node
-        
-        # ОБРАБОТКА VLESS/TROJAN
-        elif node.startswith(('vless', 'trojan')):
-            if not query.get('fp'):
-                query['fp'] = [self.get_fp(node)]
-            if not query.get('alpn'):
-                query['alpn'] = ['h2,http/1.1']
-            
-            net_type = query.get('type', [''])[0]
-            if net_type == 'ws' and not query.get('path'):
-                query['path'] = ['/graphql']
-            if net_type == 'grpc' and not query.get('serviceName'):
-                query['serviceName'] = ['grpc']
-            
-            new_query = urlencode(query, doseq=True)
-            return urlunparse(parsed._replace(query=new_query))
-        
-        return node
-        
-    except Exception:
-        return node
             # ОБРАБОТКА VLESS/TROJAN
             elif node.startswith(('vless', 'trojan')):
                 if not query.get('fp'):
@@ -283,8 +228,7 @@ class MetaAggregator:
             
             return node
             
-        except Exception as e:
-            print(f"Patch error for {node[:50]}: {e}")
+        except Exception:
             return node
 
     def get_geo(self, node):
@@ -308,7 +252,6 @@ class MetaAggregator:
     def generate_server_name(self, geo, index, rep_count, score):
         """Генерирует имя для тега (после #)"""
         
-        # Определяем качество на основе score
         if score >= 500:
             quality = "ELITE"
         elif score >= 300:
@@ -318,10 +261,8 @@ class MetaAggregator:
         else:
             quality = "BASIC"
         
-        # Флаг страны
         flag = "".join(chr(ord(c.upper()) + 127397) for c in geo) if geo != "UN" else "🌐"
         
-        # ЭТАЛОННЫЙ ФОРМАТ: 🇷🇺 RU-00001-REP(5)-HPP ELITE
         return f"{flag} {geo}-{index:05d}-REP({rep_count})-HPP {quality}"
 
     def cleanup_reputation(self, max_age_days=30, max_entries=10000):
@@ -357,25 +298,20 @@ def main():
     mobile_nodes = []
     
     for node in raw_nodes:
-        # Фильтрация мусорных IP
         if any(trash in node for trash in ["0.0.0.0", "127.0.0.1"]):
             continue
             
         try:
-            # Сохраняем теги (часть после #)
             base_link = node.split('#')[0]
             tag = node.split('#')[1] if '#' in node else ""
             
-            # ПРОВЕРКА SS ССЫЛОК НА КОРРЕКТНОСТЬ
             if base_link.startswith('ss://'):
-                if len(base_link) < 10:  # Минимальная длина
+                if len(base_link) < 10:
                     continue
                 
-                # Проверяем, что это не маскированный VLESS/Reality
                 if any(x in base_link.lower() for x in ['vless', 'reality', 'vnext', 'uuid']):
                     continue
                 
-                # Проверяем формат
                 if '@' not in base_link and ':' not in base_link[5:]:
                     try:
                         b64_part = base_link[5:].split('#')[0]
@@ -387,12 +323,10 @@ def main():
                 ss_nodes.append(node)
                 continue
             
-            # Обработка остальных протоколов
             p = urlparse(base_link)
             ip_key = f"{p.scheme}@{p.netloc.split('@')[-1].split(':')[0]}"
             score = agg.calculate_score(base_link)
             
-            # Сохраняем для whitelist файлов
             full_node_with_tag = f"{base_link}#{tag}" if tag else base_link
             tag_lower = tag.lower()
             if 'cable' in tag_lower:
@@ -433,10 +367,8 @@ def main():
         rep_val = rep_entry["count"]
         geo_str = str(geo) if geo else "UN"
         
-        # Генерируем имя для тега
         name = agg.generate_server_name(geo_str, i+1, rep_val, score)
         
-        # ВСЕ ССЫЛКИ получают имя в теге (#name)
         processed_vless.append({'node': f"{patched}#{name}", 'geo': geo_str, 'score': score, 'raw': node})
 
     def save(file, data):
@@ -449,7 +381,6 @@ def main():
     save("med.txt", [n['node'] for n in processed_vless if 150 <= n['score'] < 450][:2000])
     save("vls.txt", [n['node'] for n in processed_vless])
     
-    # SS с фильтрацией по гео
     filtered_ss = []
     for ss_node in ss_pool:
         try:
@@ -462,7 +393,6 @@ def main():
     save("ss.txt", filtered_ss[:2000])
     save("all.txt", all_unique[:25000])
     
-    # Whitelist файлы
     save("whitelist_cable.txt", cable_nodes)
     save("whitelist_mobile.txt", mobile_nodes)
 
@@ -482,5 +412,3 @@ def main():
 
 if __name__ == "__main__":
     main() 
-
-
