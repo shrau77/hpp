@@ -144,7 +144,7 @@ class MetaAggregator:
         return score
 
     def patch(self, node):
-    try:
+        try:
         parsed = urlparse(node)
         query = parse_qs(parsed.query)
         
@@ -482,4 +482,5 @@ def main():
 
 if __name__ == "__main__":
     main() 
+
 
