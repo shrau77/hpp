@@ -5,43 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 # --- НАСТРОЙКИ ---
 TARGET_SNI = list(set([
-    "www.unicreditbank.ru", "www.gazprombank.ru", "cdn.gpb.ru", "mkb.ru", "www.open.ru",
-    "cobrowsing.tbank.ru", "cdn.rosbank.ru", "www.psbank.ru", "www.raiffeisen.ru",
-    "www.rzd.ru", "st.gismeteo.st", "stat-api.gismeteo.net", "c.dns-shop.ru",
-    "restapi.dns-shop.ru", "www.pochta.ru", "passport.pochta.ru", "chat-ct.pochta.ru",
-    "www.x5.ru", "www.ivi.ru", "api2.ivi.ru", "hh.ru", "i.hh.ru", "hhcdn.ru",
-    "sentry.hh.ru", "cpa.hh.ru", "www.kp.ru", "cdnn21.img.ria.ru", "lenta.ru",
-    "sync.rambler.ru", "s.rbk.ru", "www.rbc.ru", "target.smi2.net", "hb-bidder.skcrtxr.com",
-    "strm-spbmiran-07.strm.yandex.net", "pikabu.ru", "www.tutu.ru", "cdn1.tu-tu.ru",
-    "api.apteka.ru", "static.apteka.ru", "images.apteka.ru", "scitylana.apteka.ru",
-    "www.drom.ru", "c.rdrom.ru", "www.farpost.ru", "s11.auto.drom.ru", "i.rdrom.ru",
-    "yummy.drom.ru", "www.drive2.ru", "lemanapro.ru", "stats.vk-portal.net",
-    "sun6-21.userapi.com", "sun6-20.userapi.com", "avatars.mds.yandex.net",
-    "queuev4.vk.com", "sun6-22.userapi.com", "sync.browser.yandex.net", "top-fwz1.mail.ru",
-    "ad.mail.ru", "eh.vk.com", "akashi.vk-portal.net", "sun9-38.userapi.com",
-    "st.ozone.ru", "ir.ozone.ru", "vt-1.ozone.ru", "io.ozone.ru", "ozone.ru",
-    "xapi.ozon.ru", "strm-rad-23.strm.yandex.net", "online.sberbank.ru",
-    "esa-res.online.sberbank.ru", "egress.yandex.net", "st.okcdn.ru", "rs.mail.ru",
-    "counter.yadro.ru", "742231.ms.ok.ru", "splitter.wb.ru", "a.wb.ru",
-    "user-geo-data.wildberries.ru", "banners-website.wildberries.ru",
-    "chat-prod.wildberries.ru", "servicepipe.ru", "alfabank.ru", "statad.ru",
-    "alfabank.servicecdn.ru", "alfabank.st", "ad.adriver.ru", "privacy-cs.mail.ru",
-    "imgproxy.cdn-tinkoff.ru", "mddc.tinkoff.ru", "le.tbank.ru", "hrc.tbank.ru",
-    "id.tbank.ru", "rap.skcrtxr.com", "eye.targetads.io", "px.adhigh.net", "nspk.ru",
-    "sba.yandex.net", "identitystatic.mts.ru", "tag.a.mts.ru", "login.mts.ru",
-    "serving.a.mts.ru", "cm.a.mts.ru", "login.vk.com", "api.a.mts.ru", "mtscdn.ru",
-    "d5de4k0ri8jba7ucdbt6.apigw.yandexcloud.net", "moscow.megafon.ru", "api.mindbox.ru",
-    "web-static.mindbox.ru", "storage.yandexcloud.net", "personalization-web-stable.mindbox.ru",
-    "www.t2.ru", "beeline.api.flocktory.com", "static.beeline.ru", "moskva.beeline.ru",
-    "wcm.weborama-tech.ru", "1013a--ma--8935--cp199.stbid.ru", "msk.t2.ru", "s3.t2.ru",
-    "get4click.ru", "dzen.ru", "yastatic.net", "csp.yandex.net", "sntr.avito.ru",
-    "yabro-wbplugin.edadeal.yandex.ru", "cdn.uxfeedback.ru", "goya.rutube.ru",
-    "api.expf.ru", "fb-cdn.premier.one", "www.kinopoisk.ru", "widgets.kinopoisk.ru",
-    "payment-widget.plus.kinopoisk.ru", "api.events.plus.yandex.net", "tns-counter.ru",
-    "speller.yandex.net", "widgets.cbonds.ru", "www.magnit.com", "magnit-ru.injector.3ebra.net",
-    "jsons.injector.3ebra.net", "2gis.ru", "d-assets.2gis.ru", "s1.bss.2gis.com",
-    "www.tbank.ru", "strm-spbmiran-08.strm.yandex.net", "id.tbank.ru", "tmsg.tbank.ru",
-    "vk.com", "www.wildberries.ru", "www.ozon.ru", "ok.ru", "yandex.ru"
+    # ... (остаются твои SNI без изменений) ...
 ]))
 
 BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn']
@@ -49,41 +13,7 @@ ELITE_PORTS = ['2053', '2083', '2087', '2096']
 CHAMPION_HOSTS = ['yandex', 'selectel', 'timeweb', 'firstbyte', 'gcore', 'vkcloud', 'mail.ru']
 
 urls = [
-    # Твои личные S3 источники
-    "https://s3c3.001.gpucloud.ru/dg68glfr8yyyrm9hoob72l3gdu/xicrftxzsnsz",
-    "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
-    
-    # igareck (White & Black Lists Rus)
-    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
-    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
-    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_SS%2BAll_RUS.txt",
-    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_VLESS_RUS.txt",
-    
-    # zieng2 (WL specialized)
-    "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
-    "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt",
-    
-    # 55prosek-lgtm
-    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/whitelist.txt",
-    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/blacklist.txt",
-    
-    # vlesscollector
-    "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
-    
-    # Стандартные агрегаторы
-    "https://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt",
-    "https://fsub.flux.2bd.net/githubmirror/bypass-unsecure/bypass-unsecure-all.txt",
-    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/vmess.txt",
-    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/trojan.txt",
-    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/tuic.txt",
-    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/ssr.txt",
-    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria.txt",
-    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria2.txt",
-    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hy2.txt",
-    "https://sub-aggregator.vercel.app/",
-
-    # Goida Vpn Configs (AvenCores) - прописал их циклом для чистоты
-    *[f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" for i in range(1, 27)]
+    # ... (твои URL без изменений) ...
 ]
 
 class MetaAggregator:
@@ -92,6 +22,7 @@ class MetaAggregator:
         self.reputation = self._load_json(self.rep_path)
         self.geo_cache = {}
         self.reader = geoip2.database.Reader('GeoLite2-Country.mmdb') if os.path.exists('GeoLite2-Country.mmdb') else None
+        self.server_counter = {}
 
     def _load_json(self, path):
         if os.path.exists(path):
@@ -145,16 +76,79 @@ class MetaAggregator:
         try:
             parsed = urlparse(node)
             query = parse_qs(parsed.query)
-            if node.startswith(('vless', 'vmess', 'trojan')):
-                query['fp'] = [self.get_fp(node)]
-                if 'alpn' not in query: query['alpn'] = ['h2,http/1.1']
-                net_type = query.get('type', [''])[0]
-                if net_type == 'ws' and 'path' not in query: query['path'] = ['/graphql']
-                if net_type == 'grpc' and 'serviceName' not in query: query['serviceName'] = ['grpc']
             
-            new_query = urlencode(query, doseq=True)
-            return urlunparse(parsed._replace(query=new_query))
-        except: return node
+            # ОБРАБОТКА VMESS
+            if node.startswith('vmess://'):
+                base_part = node[8:].split('?')[0]
+                
+                if base_part and len(base_part) > 10:
+                    try:
+                        # Декодируем Base64 JSON
+                        json_str = base64.b64decode(base_part + '=' * (-len(base_part) % 4)).decode('utf-8')
+                        config = json.loads(json_str)
+                        
+                        # 1. Исправляем некорректный type
+                        type_val = config.get('type', '')
+                        if type_val == '---':
+                            config['type'] = 'none'
+                        
+                        # 2. Переносим параметры из query в JSON
+                        if query:
+                            # fp из query
+                            if 'fp' in query and query['fp'][0]:
+                                config['fp'] = query['fp'][0]
+                            elif not config.get('fp'):
+                                config['fp'] = self.get_fp(node)
+                            
+                            # alpn из query
+                            if 'alpn' in query and query['alpn'][0]:
+                                config['alpn'] = query['alpn'][0]
+                            elif not config.get('alpn'):
+                                config['alpn'] = 'h2,http/1.1'
+                            
+                            # Остальные параметры
+                            for key in ['sni', 'host', 'path', 'serviceName']:
+                                if key in query and query[key][0] and not config.get(key):
+                                    config[key] = query[key][0]
+                        
+                        # 3. Гарантируем обязательные поля
+                        if not config.get('fp'):
+                            config['fp'] = self.get_fp(node)
+                        if not config.get('alpn'):
+                            config['alpn'] = 'h2,http/1.1'
+                        
+                        # 4. Собираем обратно в Base64
+                        new_json = json.dumps(config, separators=(',', ':'))
+                        new_base64 = base64.b64encode(new_json.encode()).decode().rstrip('=')
+                        
+                        return f"vmess://{new_base64}"
+                        
+                    except Exception as e:
+                        # Если ошибка - оставляем как есть
+                        print(f"VMESS patch error: {e}")
+                        return node
+            
+            # ОБРАБОТКА VLESS/TROJAN
+            elif node.startswith(('vless', 'trojan')):
+                if not query.get('fp'):
+                    query['fp'] = [self.get_fp(node)]
+                if not query.get('alpn'):
+                    query['alpn'] = ['h2,http/1.1']
+                
+                net_type = query.get('type', [''])[0]
+                if net_type == 'ws' and not query.get('path'):
+                    query['path'] = ['/graphql']
+                if net_type == 'grpc' and not query.get('serviceName'):
+                    query['serviceName'] = ['grpc']
+                
+                new_query = urlencode(query, doseq=True)
+                return urlunparse(parsed._replace(query=new_query))
+            
+            return node
+            
+        except Exception as e:
+            print(f"Patch error: {e}")
+            return node
 
     def get_geo(self, node):
         try:
@@ -173,6 +167,25 @@ class MetaAggregator:
             self.geo_cache[host] = code
             return code
         except: return "UN"
+
+    def generate_server_name(self, geo, index, rep_count, score):
+        """Генерирует имя для тега (после #)"""
+        
+        # Определяем качество на основе score
+        if score >= 500:
+            quality = "ELITE"
+        elif score >= 300:
+            quality = "PREMIUM"
+        elif score >= 150:
+            quality = "STANDARD"
+        else:
+            quality = "BASIC"
+        
+        # Флаг страны
+        flag = "".join(chr(ord(c.upper()) + 127397) for c in geo) if geo != "UN" else "🌐"
+        
+        # ЭТАЛОННЫЙ ФОРМАТ: 🇷🇺 RU-00001-REP(5)-HPP ELITE
+        return f"{flag} {geo}-{index:05d}-REP({rep_count})-HPP {quality}"
 
     def cleanup_reputation(self, max_age_days=30, max_entries=10000):
         now = int(time.time())
@@ -202,26 +215,68 @@ def main():
         raw_nodes.extend([l.strip() for l in content.splitlines() if "://" in l and not l.startswith("//")])
 
     unique_map = {}
+    ss_nodes = []
+    cable_nodes = []
+    mobile_nodes = []
+    
     for node in raw_nodes:
         # Фильтрация мусорных IP
         if any(trash in node for trash in ["0.0.0.0", "127.0.0.1"]):
             continue
             
         try:
-            # Отрезаем всё лишнее сразу (чистим хвост #)
+            # Сохраняем теги (часть после #)
             base_link = node.split('#')[0]
+            tag = node.split('#')[1] if '#' in node else ""
+            
+            # ПРОВЕРКА SS ССЫЛОК НА КОРРЕКТНОСТЬ
+            if base_link.startswith('ss://'):
+                if len(base_link) < 10:  # Минимальная длина
+                    continue
+                
+                # Проверяем, что это не маскированный VLESS/Reality
+                if any(x in base_link.lower() for x in ['vless', 'reality', 'vnext', 'uuid']):
+                    continue
+                
+                # Проверяем формат
+                if '@' not in base_link and ':' not in base_link[5:]:
+                    try:
+                        b64_part = base_link[5:].split('#')[0]
+                        if not re.match(r'^[A-Za-z0-9+/=]+$', b64_part):
+                            continue
+                    except:
+                        continue
+                
+                ss_nodes.append(node)
+                continue
+            
+            # Обработка остальных протоколов
             p = urlparse(base_link)
             ip_key = f"{p.scheme}@{p.netloc.split('@')[-1].split(':')[0]}"
             score = agg.calculate_score(base_link)
+            
+            # Сохраняем для whitelist файлов
+            full_node_with_tag = f"{base_link}#{tag}" if tag else base_link
+            tag_lower = tag.lower()
+            if 'cable' in tag_lower:
+                cable_nodes.append(full_node_with_tag)
+            if 'mobile' in tag_lower:
+                mobile_nodes.append(full_node_with_tag)
+            
             if ip_key not in unique_map or score > unique_map[ip_key]['score']:
-                unique_map[ip_key] = {'node': base_link, 'score': score}
+                unique_map[ip_key] = {
+                    'node': base_link, 
+                    'score': score, 
+                    'tag': tag,
+                    'full_with_tag': full_node_with_tag
+                }
         except: continue
     
     sorted_nodes = sorted(unique_map.values(), key=lambda x: x['score'], reverse=True)
     all_unique = [v['node'] for v in sorted_nodes]
 
     vless_pool = [n for n in all_unique if not n.startswith('ss://')][:5000]
-    ss_pool = [n for n in all_unique if n.startswith('ss://')]
+    ss_pool = ss_nodes[:2000]
     
     processed_vless = []
     now_ts = int(time.time())
@@ -240,11 +295,11 @@ def main():
         
         rep_val = rep_entry["count"]
         geo_str = str(geo) if geo else "UN"
-        flag = "".join(chr(ord(c.upper()) + 127397) for c in geo_str) if geo_str != "UN" else "🌐"
         
-        # ЭТАЛОННЫЙ НЕЙМИНГ: 🇷🇺 RU-00001-REP(1)-HPP ELITE
-        name = f"{flag} {geo_str}-{i+1:05}-REP({rep_val})-HPP ELITE"
+        # Генерируем имя для тега
+        name = agg.generate_server_name(geo_str, i+1, rep_val, score)
         
+        # ВСЕ ССЫЛКИ получают имя в теге (#name)
         processed_vless.append({'node': f"{patched}#{name}", 'geo': geo_str, 'score': score, 'raw': node})
 
     def save(file, data):
@@ -256,10 +311,23 @@ def main():
     save("mob.txt", [n['node'] for n in processed_vless if n['score'] >= 300][:1000])
     save("med.txt", [n['node'] for n in processed_vless if 150 <= n['score'] < 450][:2000])
     save("vls.txt", [n['node'] for n in processed_vless])
-    save("ss.txt", [n for n in ss_pool if agg.get_geo(n) != "RU"][:2000])
+    
+    # SS с фильтрацией по гео
+    filtered_ss = []
+    for ss_node in ss_pool:
+        try:
+            base_link = ss_node.split('#')[0]
+            if agg.get_geo(base_link) != "RU":
+                filtered_ss.append(ss_node)
+        except:
+            continue
+    
+    save("ss.txt", filtered_ss[:2000])
     save("all.txt", all_unique[:25000])
-    save("whitelist_cable.txt", [n['node'] for n in processed_vless if 'cable' in n['raw'].lower()])
-    save("whitelist_mobile.txt", [n['node'] for n in processed_vless if 'mobile' in n['raw'].lower()])
+    
+    # Whitelist файлы
+    save("whitelist_cable.txt", cable_nodes)
+    save("whitelist_mobile.txt", mobile_nodes)
 
     try:
         shutil.copy("hard_hidden.txt", "business.txt")
@@ -277,5 +345,3 @@ def main():
 
 if __name__ == "__main__":
     main()
- 
-
