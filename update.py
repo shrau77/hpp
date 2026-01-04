@@ -144,61 +144,127 @@ class MetaAggregator:
         return score
 
     def patch(self, node):
-        try:
-            parsed = urlparse(node)
-            query = parse_qs(parsed.query)
+    try:
+        parsed = urlparse(node)
+        query = parse_qs(parsed.query)
+        
+        # ОБРАБОТКА VMESS
+        if node.startswith('vmess://'):
+            base_part = node[8:].split('?')[0]
             
-            # ОБРАБОТКА VMESS
-            if node.startswith('vmess://'):
-                base_part = node[8:].split('?')[0]
+            if not base_part or len(base_part) < 5:
+                return node
+            
+            # 1. Проверяем UUID формат
+            uuid_match = re.match(r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}', base_part.lower())
+            if uuid_match:
+                if query:
+                    new_query = urlencode(query, doseq=True)
+                    return urlunparse(parsed._replace(query=new_query))
+                return node
+            
+            # 2. Проверяем формат UUID@host
+            uuid_host_match = re.match(r'^[a-f0-9-]+@[^@]+$', base_part.lower())
+            if uuid_host_match:
+                if query:
+                    new_query = urlencode(query, doseq=True)
+                    return urlunparse(parsed._replace(query=new_query))
+                return node
+            
+            # 3. Пытаемся декодировать как Base64
+            try:
+                base_part_clean = base_part.strip()
+                missing_padding = len(base_part_clean) % 4
+                if missing_padding:
+                    base_part_clean += '=' * (4 - missing_padding)
                 
-                if base_part and len(base_part) > 10:
-                    try:
-                        # Декодируем Base64 JSON
-                        json_str = base64.b64decode(base_part + '=' * (-len(base_part) % 4)).decode('utf-8')
-                        config = json.loads(json_str)
-                        
-                        # 1. Исправляем некорректный type
-                        type_val = config.get('type', '')
-                        if type_val == '---':
-                            config['type'] = 'none'
-                        
-                        # 2. Переносим параметры из query в JSON
-                        if query:
-                            # fp из query
-                            if 'fp' in query and query['fp'][0]:
-                                config['fp'] = query['fp'][0]
-                            elif not config.get('fp'):
-                                config['fp'] = self.get_fp(node)
-                            
-                            # alpn из query
-                            if 'alpn' in query and query['alpn'][0]:
-                                config['alpn'] = query['alpn'][0]
-                            elif not config.get('alpn'):
-                                config['alpn'] = 'h2,http/1.1'
-                            
-                            # Остальные параметры
-                            for key in ['sni', 'host', 'path', 'serviceName']:
-                                if key in query and query[key][0] and not config.get(key):
-                                    config[key] = query[key][0]
-                        
-                        # 3. Гарантируем обязательные поля
-                        if not config.get('fp'):
-                            config['fp'] = self.get_fp(node)
-                        if not config.get('alpn'):
-                            config['alpn'] = 'h2,http/1.1'
-                        
-                        # 4. Собираем обратно в Base64
-                        new_json = json.dumps(config, separators=(',', ':'))
-                        new_base64 = base64.b64encode(new_json.encode()).decode().rstrip('=')
-                        
-                        return f"vmess://{new_base64}"
-                        
-                    except Exception as e:
-                        # Если ошибка - оставляем как есть
-                        print(f"VMESS patch error for {node[:50]}: {e}")
-                        return node
+                decoded = base64.b64decode(base_part_clean, validate=True)
+                
+                try:
+                    json_str = decoded.decode('utf-8')
+                except UnicodeDecodeError:
+                    json_str = decoded.decode('latin-1')
+                
+                try:
+                    config = json.loads(json_str)
+                except json.JSONDecodeError:
+                    return node
+                
+                # Исправляем некорректный type
+                type_val = config.get('type', '')
+                if type_val == '---':
+                    config['type'] = 'none'
+                
+                # Переносим параметры из query в JSON
+                if query:
+                    if 'fp' in query and query['fp'][0]:
+                        config['fp'] = query['fp'][0]
+                    elif not config.get('fp'):
+                        config['fp'] = self.get_fp(node)
+                    
+                    if 'alpn' in query and query['alpn'][0]:
+                        config['alpn'] = query['alpn'][0]
+                    elif not config.get('alpn'):
+                        config['alpn'] = 'h2,http/1.1'
+                    
+                    for key in ['sni', 'host', 'path', 'serviceName']:
+                        if key in query and query[key][0] and not config.get(key):
+                            config[key] = query[key][0]
+                else:
+                    if not config.get('fp'):
+                        config['fp'] = self.get_fp(node)
+                    if not config.get('alpn'):
+                        config['alpn'] = 'h2,http/1.1'
+                
+                new_json = json.dumps(config, separators=(',', ':'))
+                new_base64 = base64.b64encode(new_json.encode()).decode().rstrip('=')
+                
+                return f"vmess://{new_base64}"
+                
+            except Exception:
+                return node
+        
+        # ОБРАБОТКА VLESS/TROJAN
+        elif node.startswith(('vless', 'trojan')):
+            if not query.get('fp'):
+                query['fp'] = [self.get_fp(node)]
+            if not query.get('alpn'):
+                query['alpn'] = ['h2,http/1.1']
             
+            net_type = query.get('type', [''])[0]
+            if net_type == 'ws' and not query.get('path'):
+                query['path'] = ['/graphql']
+            if net_type == 'grpc' and not query.get('serviceName'):
+                query['serviceName'] = ['grpc']
+            
+            new_query = urlencode(query, doseq=True)
+            return urlunparse(parsed._replace(query=new_query))
+        
+        return node
+        
+    except Exception:
+        return node
+        
+        # ОБРАБОТКА VLESS/TROJAN
+        elif node.startswith(('vless', 'trojan')):
+            if not query.get('fp'):
+                query['fp'] = [self.get_fp(node)]
+            if not query.get('alpn'):
+                query['alpn'] = ['h2,http/1.1']
+            
+            net_type = query.get('type', [''])[0]
+            if net_type == 'ws' and not query.get('path'):
+                query['path'] = ['/graphql']
+            if net_type == 'grpc' and not query.get('serviceName'):
+                query['serviceName'] = ['grpc']
+            
+            new_query = urlencode(query, doseq=True)
+            return urlunparse(parsed._replace(query=new_query))
+        
+        return node
+        
+    except Exception:
+        return node
             # ОБРАБОТКА VLESS/TROJAN
             elif node.startswith(('vless', 'trojan')):
                 if not query.get('fp'):
@@ -416,3 +482,4 @@ def main():
 
 if __name__ == "__main__":
     main() 
+
