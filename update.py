@@ -49,7 +49,7 @@ ELITE_PORTS = ['2053', '2083', '2087', '2096']
 CHAMPION_HOSTS = ['yandex', 'selectel', 'timeweb', 'firstbyte', 'gcore', 'vkcloud', 'mail.ru']
 
 urls = [
-    "https://s3c3.001.gpucloud.ru/dg68glfr8yyyrm9hoob72l3gdu/xicrftxzsnsz",
+    "https://s3c3.001.gpucloud.ru/dggdu/xixz",
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
@@ -69,6 +69,7 @@ urls = [
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria.txt",
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria2.txt",
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hy2.txt",
+    "http://livpn.atwebpages.com/sub.php?token=c829c20769d2112b", 
     "https://sub-aggregator.vercel.app/",
     *[f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" for i in range(1, 27)]
 ]
@@ -412,3 +413,4 @@ def main():
 
 if __name__ == "__main__":
     main() 
+
