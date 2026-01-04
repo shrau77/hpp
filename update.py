@@ -5,15 +5,86 @@ from concurrent.futures import ThreadPoolExecutor
 
 # --- НАСТРОЙКИ ---
 TARGET_SNI = list(set([
-    # ... (остаются твои SNI без изменений) ...
+    "www.unicreditbank.ru", "www.gazprombank.ru", "cdn.gpb.ru", "mkb.ru", "www.open.ru",
+    "cobrowsing.tbank.ru", "cdn.rosbank.ru", "www.psbank.ru", "www.raiffeisen.ru",
+    "www.rzd.ru", "st.gismeteo.st", "stat-api.gismeteo.net", "c.dns-shop.ru",
+    "restapi.dns-shop.ru", "www.pochta.ru", "passport.pochta.ru", "chat-ct.pochta.ru",
+    "www.x5.ru", "www.ivi.ru", "api2.ivi.ru", "hh.ru", "i.hh.ru", "hhcdn.ru",
+    "sentry.hh.ru", "cpa.hh.ru", "www.kp.ru", "cdnn21.img.ria.ru", "lenta.ru",
+    "sync.rambler.ru", "s.rbk.ru", "www.rbc.ru", "target.smi2.net", "hb-bidder.skcrtxr.com",
+    "strm-spbmiran-07.strm.yandex.net", "pikabu.ru", "www.tutu.ru", "cdn1.tu-tu.ru",
+    "api.apteka.ru", "static.apteka.ru", "images.apteka.ru", "scitylana.apteka.ru",
+    "www.drom.ru", "c.rdrom.ru", "www.farpost.ru", "s11.auto.drom.ru", "i.rdrom.ru",
+    "yummy.drom.ru", "www.drive2.ru", "lemanapro.ru", "stats.vk-portal.net",
+    "sun6-21.userapi.com", "sun6-20.userapi.com", "avatars.mds.yandex.net",
+    "queuev4.vk.com", "sun6-22.userapi.com", "sync.browser.yandex.net", "top-fwz1.mail.ru",
+    "ad.mail.ru", "eh.vk.com", "akashi.vk-portal.net", "sun9-38.userapi.com",
+    "st.ozone.ru", "ir.ozone.ru", "vt-1.ozone.ru", "io.ozone.ru", "ozone.ru",
+    "xapi.ozon.ru", "strm-rad-23.strm.yandex.net", "online.sberbank.ru",
+    "esa-res.online.sberbank.ru", "egress.yandex.net", "st.okcdn.ru", "rs.mail.ru",
+    "counter.yadro.ru", "742231.ms.ok.ru", "splitter.wb.ru", "a.wb.ru",
+    "user-geo-data.wildberries.ru", "banners-website.wildberries.ru",
+    "chat-prod.wildberries.ru", "servicepipe.ru", "alfabank.ru", "statad.ru",
+    "alfabank.servicecdn.ru", "alfabank.st", "ad.adriver.ru", "privacy-cs.mail.ru",
+    "imgproxy.cdn-tinkoff.ru", "mddc.tinkoff.ru", "le.tbank.ru", "hrc.tbank.ru",
+    "id.tbank.ru", "rap.skcrtxr.com", "eye.targetads.io", "px.adhigh.net", "nspk.ru",
+    "sba.yandex.net", "identitystatic.mts.ru", "tag.a.mts.ru", "login.mts.ru",
+    "serving.a.mts.ru", "cm.a.mts.ru", "login.vk.com", "api.a.mts.ru", "mtscdn.ru",
+    "d5de4k0ri8jba7ucdbt6.apigw.yandexcloud.net", "moscow.megafon.ru", "api.mindbox.ru",
+    "web-static.mindbox.ru", "storage.yandexcloud.net", "personalization-web-stable.mindbox.ru",
+    "www.t2.ru", "beeline.api.flocktory.com", "static.beeline.ru", "moskva.beeline.ru",
+    "wcm.weborama-tech.ru", "1013a--ma--8935--cp199.stbid.ru", "msk.t2.ru", "s3.t2.ru",
+    "get4click.ru", "dzen.ru", "yastatic.net", "csp.yandex.net", "sntr.avito.ru",
+    "yabro-wbplugin.edadeal.yandex.ru", "cdn.uxfeedback.ru", "goya.rutube.ru",
+    "api.expf.ru", "fb-cdn.premier.one", "www.kinopoisk.ru", "widgets.kinopoisk.ru",
+    "payment-widget.plus.kinopoisk.ru", "api.events.plus.yandex.net", "tns-counter.ru",
+    "speller.yandex.net", "widgets.cbonds.ru", "www.magnit.com", "magnit-ru.injector.3ebra.net",
+    "jsons.injector.3ebra.net", "2gis.ru", "d-assets.2gis.ru", "s1.bss.2gis.com",
+    "www.tbank.ru", "strm-spbmiran-08.strm.yandex.net", "id.tbank.ru", "tmsg.tbank.ru",
+    "vk.com", "www.wildberries.ru", "www.ozon.ru", "ok.ru", "yandex.ru"
 ]))
 
 BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn']
 ELITE_PORTS = ['2053', '2083', '2087', '2096']
 CHAMPION_HOSTS = ['yandex', 'selectel', 'timeweb', 'firstbyte', 'gcore', 'vkcloud', 'mail.ru']
 
+# --- ВАШИ URL ИСТОЧНИКОВ (ВОССТАНОВЛЕНО) ---
 urls = [
-    # ... (твои URL без изменений) ...
+    # Твои личные S3 источники
+    "https://s3c3.001.gpucloud.ru/dg68glfr8yyyrm9hoob72l3gdu/xicrftxzsnsz",
+    "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
+    
+    # igareck (White & Black Lists Rus)
+    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
+    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
+    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_SS%2BAll_RUS.txt",
+    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_VLESS_RUS.txt",
+    
+    # zieng2 (WL specialized)
+    "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
+    "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt",
+    
+    # 55prosek-lgtm
+    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/whitelist.txt",
+    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/blacklist.txt",
+    
+    # vlesscollector
+    "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
+    
+    # Стандартные агрегаторы
+    "https://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt",
+    "https://fsub.flux.2bd.net/githubmirror/bypass-unsecure/bypass-unsecure-all.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/vmess.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/trojan.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/tuic.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/ssr.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hysteria2.txt",
+    "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hy2.txt",
+    "https://sub-aggregator.vercel.app/",
+
+    # Goida Vpn Configs (AvenCores)
+    *[f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" for i in range(1, 27)]
 ]
 
 class MetaAggregator:
@@ -125,7 +196,7 @@ class MetaAggregator:
                         
                     except Exception as e:
                         # Если ошибка - оставляем как есть
-                        print(f"VMESS patch error: {e}")
+                        print(f"VMESS patch error for {node[:50]}: {e}")
                         return node
             
             # ОБРАБОТКА VLESS/TROJAN
@@ -147,7 +218,7 @@ class MetaAggregator:
             return node
             
         except Exception as e:
-            print(f"Patch error: {e}")
+            print(f"Patch error for {node[:50]}: {e}")
             return node
 
     def get_geo(self, node):
@@ -344,4 +415,4 @@ def main():
     print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Скрипт завершен.")
 
 if __name__ == "__main__":
-    main()
+    main() 
