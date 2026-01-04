@@ -61,6 +61,10 @@ urls = [
     "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/blacklist.txt",
     "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
     "https://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt",
+    "https://etoneya.a9fm.site/1",
+    "https://raw.githubusercontent.com/vsevjik/OBSpiskov/refs/heads/main/wwh#OBSpiskov",
+    "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/blacklist.txt", 
+    "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt", 
     "https://fsub.flux.2bd.net/githubmirror/bypass-unsecure/bypass-unsecure-all.txt",
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/vmess.txt",
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/trojan.txt",
@@ -413,4 +417,5 @@ def main():
 
 if __name__ == "__main__":
     main() 
+
 
