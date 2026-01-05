@@ -75,6 +75,9 @@ urls = [
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hy2.txt",
     "http://livpn.atwebpages.com/sub.php?token=c829c20769d2112b", 
     "https://sub-aggregator.vercel.app/",
+    "https://shz.al/YjSPQaSTpHYNakFnE2ddjcCK:/~@sorenab1,/VIESS,subSOREN#VIESS,subSOREN", 
+    "https://s3c3.001.gpucloud.ru/rtrq/jsoxn", 
+    "https://raw.githubusercontent.com/bywarm/whitelists-vpns-etc/refs/heads/main/whitelists1-4pda.txt", 
     *[f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" for i in range(1, 27)]
 ]
 
@@ -417,5 +420,6 @@ def main():
 
 if __name__ == "__main__":
     main() 
+
 
 
