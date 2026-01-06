@@ -725,7 +725,7 @@ with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
     f.write("\n".join(ultra_elite_servers))
 print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} ULTRA ELITE серверов")
     
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Подготовка ultra elite...")
+print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Подготовка ultra elite...")
     
 # Сохранение остальных файлов
 print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение файлов...")
@@ -777,4 +777,5 @@ print(f"  - SS нод: {len(filtered_ss)}")
 
 if __name__ == "__main__":
     main()
+
 
