@@ -722,11 +722,11 @@ for processed in processed_vless:
 
 print(f"    ✅ Итог: {elite_counter} ULTRA ELITE серверов с тегами")
     
-    # 6. Сохраняем
-    with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
-        f.write("\n".join(ultra_elite_servers))
-    print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} ULTRA ELITE серверов")
-    
+    # 6. Сохраняем ultra elite
+with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
+    f.write("\n".join(ultra_elite_servers))
+print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} ULTRA ELITE серверов")
+
     # Сохранение остальных файлов
     print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение файлов...")
     
@@ -777,5 +777,6 @@ print(f"    ✅ Итог: {elite_counter} ULTRA ELITE серверов с тег
 
 if __name__ == "__main__":
     main()
+
 
 
