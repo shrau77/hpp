@@ -777,3 +777,4 @@ print(f"  - SS нод: {len(filtered_ss)}")
 
 if __name__ == "__main__":
     main()
+
