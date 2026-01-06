@@ -721,23 +721,23 @@ for processed in processed_vless:
         print(f"    ⏳ Найдено {elite_counter} ULTRA ELITE серверов")
 
 print(f"    ✅ Итог: {elite_counter} ULTRA ELITE серверов с тегами")
-    
-    # 6. Сохраняем ultra elite
+
+# 6. Сохраняем ultra elite
 with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
     f.write("\n".join(ultra_elite_servers))
 print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} ULTRA ELITE серверов")
 
-    # Сохранение остальных файлов
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение файлов...")
-    
-    save("hard_hidden.txt", [n['node'] for n in processed_vless[:1000] if n['score'] >= 500])
-    save("mob.txt", [n['node'] for n in processed_vless if n['score'] >= 300][:1000])
-    save("med.txt", [n['node'] for n in processed_vless if 150 <= n['score'] < 450][:2000])
-    save("vls.txt", [n['node'] for n in processed_vless])
-    
-    filtered_ss = []
-    for ss_node in ss_pool:
-        try:
+# Сохранение остальных файлов
+print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение файлов...")
+
+save("hard_hidden.txt", [n['node'] for n in processed_vless[:1000] if n['score'] >= 500])
+save("mob.txt", [n['node'] for n in processed_vless if n['score'] >= 300][:1000])
+save("med.txt", [n['node'] for n in processed_vless if 150 <= n['score'] < 450][:2000])
+save("vls.txt", [n['node'] for n in processed_vless])
+
+filtered_ss = []
+for ss_node in ss_pool:
+    try:
             base_link = ss_node.split('#')[0]
             if agg.get_geo(base_link) != "RU":
                 filtered_ss.append(ss_node)
@@ -777,6 +777,7 @@ print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} ULTRA ELITE серв�
 
 if __name__ == "__main__":
     main()
+
 
 
 
