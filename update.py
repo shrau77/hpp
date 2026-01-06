@@ -431,22 +431,67 @@ class MetaAggregator:
             return node
 
     def get_geo(self, node):
-        try:
-            parsed = urlparse(node)
-            host = parsed.netloc.split('@')[-1].split(':')[0]
-            if not host: return "UN"
-            if host in self.geo_cache: return self.geo_cache[host]
+    """Геолокация: IP → GeoLite2, домены → простые правила"""
+    try:
+        parsed = urlparse(node)
+        host = parsed.netloc.split('@')[-1].split(':')[0]
+        
+        if not host:
+            return "UN"
             
-            ip = socket.gethostbyname(host) if not re.match(r"^\d", host) else host
-            code = "UN"
+        # Кэш
+        if host in self.geo_cache:
+            return self.geo_cache[host]
+        
+        # 1. Если это IP - GeoLite2
+        if re.match(r'^\d+\.\d+\.\d+\.\d+$', host):
             if self.reader:
                 try:
-                    res = self.reader.country(ip)
-                    if res.country.iso_code: code = res.country.iso_code
-                except: pass
-            self.geo_cache[host] = code
-            return code
-        except: return "UN"
+                    result = self.reader.country(host)
+                    country = result.country.iso_code or "UN"
+                    self.geo_cache[host] = country
+                    return country
+                except:
+                    self.geo_cache[host] = "UN"
+                    return "UN"
+        
+        # 2. Если домен - простые правила БЕЗ DNS
+        # Самые очевидные русские домены
+        if host.endswith(('.ru', '.su', '.рф')):
+            self.geo_cache[host] = "RU"
+            return "RU"
+            
+        if host.endswith('.ua'):
+            self.geo_cache[host] = "UA"
+            return "UA"
+            
+        if host.endswith('.kz'):
+            self.geo_cache[host] = "KZ"
+            return "KZ"
+            
+        if host.endswith('.by'):
+            self.geo_cache[host] = "BY"
+            return "BY"
+            
+        if host.endswith('.tr'):
+            self.geo_cache[host] = "TR"
+            return "TR"
+        
+        # 3. Популярные хосты которые знаем
+        RU_HOSTS = ['.yandex.', '.mail.', '.vk.', '.rutube.', 
+                   '.rambler.', '.sber.', '.tinkoff.']
+        
+        for ru_host in RU_HOSTS:
+            if ru_host in host:
+                self.geo_cache[host] = "RU"
+                return "RU"
+        
+        # 4. Не знаем - UN
+        self.geo_cache[host] = "UN"
+        return "UN"
+            
+    except Exception:
+        return "UN"
 
     def generate_server_name(self, geo, index, rep_count, score):
         """Генерирует имя для тега (после #)"""
