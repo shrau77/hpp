@@ -738,46 +738,42 @@ save("vls.txt", [n['node'] for n in processed_vless])
 filtered_ss = []
 for ss_node in ss_pool:
     try:
-            base_link = ss_node.split('#')[0]
-            if agg.get_geo(base_link) != "RU":
-                filtered_ss.append(ss_node)
-        except:
-            continue
-    
-    save("ss.txt", filtered_ss[:2000])
-    save("all.txt", all_unique[:25000])
-    
-    save("whitelist_cable.txt", cable_nodes)
-    save("whitelist_mobile.txt", mobile_nodes)
+        base_link = ss_node.split('#')[0]
+        if agg.get_geo(base_link) != "RU":
+            filtered_ss.append(ss_node)
+    except:
+        continue
 
-    try:
-        shutil.copy("hard_hidden.txt", "business.txt")
-        shutil.copy("vls.txt", "vless_vmess.txt")
-        shutil.copy("all.txt", "sub.txt")
-        shutil.copy("all.txt", "all_configs.txt")
-        print("✅ Созданы дополнительные копии файлов")
-    except Exception as e:
-        print(f"⚠️ Ошибка копирования файлов: {e}")
+save("ss.txt", filtered_ss[:2000])
+save("all.txt", all_unique[:25000])
 
-    agg.cleanup_reputation()
-    with open(agg.rep_path, 'w', encoding='utf-8') as f:
-        json.dump(agg.reputation, f, indent=2)
-    print("✅ Обновлена репутация серверов")
-        
-    if agg.reader: 
-        agg.reader.close()
-        
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Скрипт успешно завершен.")
-    print(f"📊 Итоги:")
-    print(f"  - Всего нод: {len(raw_nodes)}")
-    print(f"  - Уникальных: {len(all_unique)}")
-    print(f"  - ULTRA ELITE: {len(ultra_elite_servers)}")
-    print(f"  - Обработано VLESS: {len(processed_vless)}")
-    print(f"  - SS нод: {len(filtered_ss)}")
+save("whitelist_cable.txt", cable_nodes)
+save("whitelist_mobile.txt", mobile_nodes)
+
+try:
+    shutil.copy("hard_hidden.txt", "business.txt")
+    shutil.copy("vls.txt", "vless_vmess.txt")
+    shutil.copy("all.txt", "sub.txt")
+    shutil.copy("all.txt", "all_configs.txt")
+    print("✅ Созданы дополнительные копии файлов")
+except Exception as e:
+    print(f"⚠️ Ошибка копирования файлов: {e}")
+
+agg.cleanup_reputation()
+with open(agg.rep_path, 'w', encoding='utf-8') as f:
+    json.dump(agg.reputation, f, indent=2)
+print("✅ Обновлена репутация серверов")
+
+if agg.reader:
+    agg.reader.close()
+
+print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Скрипт успешно завершен.")
+print(f"📊 Итоги:")
+print(f"  - Всего нод: {len(raw_nodes)}")
+print(f"  - Уникальных: {len(all_unique)}")
+print(f"  - ULTRA ELITE: {len(ultra_elite_servers)}")
+print(f"  - Обработано VLESS: {len(processed_vless)}")
+print(f"  - SS нод: {len(filtered_ss)}")
 
 if __name__ == "__main__":
     main()
-
-
-
-
