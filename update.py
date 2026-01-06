@@ -592,7 +592,7 @@ def main():
             'node': node,
             'score': score,
             'sni': agg._extract_sni(node),
-            'uuid': agg._extract_uuid(node)
+            'uuid': agg._extract_uuid(node), 
             'geo': geo
         }) 
     
@@ -777,4 +777,5 @@ print(f"    ✅ Итог: {elite_counter} ULTRA ELITE серверов с тег
 
 if __name__ == "__main__":
     main()
+
 
