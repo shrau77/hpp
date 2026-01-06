@@ -88,6 +88,7 @@ urls = [
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_SS%2BAll_RUS.txt",
+    "https://raw.githubusercontent.com/STR97/STRUGOV/refs/heads/main/STR.BYPASS", 
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_VLESS_RUS.txt",
     "https://raw.githubusercontent.com/zieng2/wl/main/vless_lite.txt",
     "https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt",
@@ -109,6 +110,7 @@ urls = [
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hy2.txt",
     "http://livpn.atwebpages.com/sub.php?token=c829c20769d2112b", 
     "https://sub-aggregator.vercel.app/",
+    "https://s3c3.001.gpucloud.ru/dixsm/htxml",
     "https://shz.al/YjSPQaSTpHYNakFnE2ddjcCK:/~@sorenab1,/VIESS,subSOREN#VIESS,subSOREN", 
     "https://s3c3.001.gpucloud.ru/rtrq/jsoxn", 
     "https://raw.githubusercontent.com/bywarm/whitelists-vpns-etc/refs/heads/main/whitelists1-4pda.txt", 
@@ -821,3 +823,4 @@ def main():
 
 if __name__ == "__main__":
     main()  
+
