@@ -628,8 +628,6 @@ def main():
         
         processed_vless.append({'node': f"{patched}#{name}", 'geo': geo_str, 'score': score, 'raw': node})
     
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Подготовка ultra elite...")
-    
     # 4. Функция определения ultra elite
     def is_ultra_elite(node_data):
         try:
@@ -726,7 +724,9 @@ print(f"    ✅ Итог: {elite_counter} ULTRA ELITE серверов с тег
 with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
     f.write("\n".join(ultra_elite_servers))
 print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} ULTRA ELITE серверов")
-
+    
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Подготовка ultra elite...")
+    
 # Сохранение остальных файлов
 print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение файлов...")
 
