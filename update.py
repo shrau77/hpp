@@ -84,6 +84,7 @@ ELITE_PORTS = list(set(ELITE_PORTS))  # Убираем дубли
 
 urls = [
     "https://s3c3.001.gpucloud.ru/dggdu/xixz",
+    "https://raw.githubusercontent.com/HikaruApps/WhiteLattice/refs/heads/main/subscriptions/config.txt", 
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
@@ -823,4 +824,5 @@ def main():
 
 if __name__ == "__main__":
     main()  
+
 
