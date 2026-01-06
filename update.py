@@ -593,7 +593,8 @@ def main():
             'score': score,
             'sni': agg._extract_sni(node),
             'uuid': agg._extract_uuid(node)
-        })
+            'geo': geo
+        }) 
     
     # 3. Сортируем
     enriched_nodes.sort(key=lambda x: x['score'], reverse=True)
@@ -694,13 +695,32 @@ def main():
         except:
             return False
     
-    # 5. Собираем ultra elite
-    ultra_elite_servers = []
-    for node_data in enriched_nodes:
-        if is_ultra_elite(node_data):
-            ultra_elite_servers.append(node_data['node'])
-        if len(ultra_elite_servers) >= 1000:
+    # 5. Собираем ultra elite (С ТЕГАМИ КАК В business.txt)
+print(f"[{datetime.now().strftime('%H:%M:%S')}] 💎 Формирование ULTRA ELITE списка...")
+ultra_elite_servers = []
+
+# Берем ТОЛЬКО уже обработанные ноды из processed_vless (они уже имеют теги с флагами)
+elite_counter = 0
+for processed in processed_vless:
+    if elite_counter >= 1000:
+        break
+    
+    # Находим эту ноду в enriched_nodes для проверки is_ultra_elite
+    node_data = None
+    for n in enriched_nodes:
+        if n['node'] == processed['raw']:
+            node_data = n
             break
+    
+    if node_data and is_ultra_elite(node_data):
+        ultra_elite_servers.append(processed['node'])  # Уже содержит тег с флагом
+        elite_counter += 1
+    
+    # Прогресс
+    if elite_counter > 0 and elite_counter % 100 == 0:
+        print(f"    ⏳ Найдено {elite_counter} ULTRA ELITE серверов")
+
+print(f"    ✅ Итог: {elite_counter} ULTRA ELITE серверов с тегами")
     
     # 6. Сохраняем
     with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
@@ -757,3 +777,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
