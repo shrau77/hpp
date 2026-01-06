@@ -47,8 +47,41 @@ TARGET_SNI = list(set([
 BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn']
 ELITE_PORTS = ['2053', '2083', '2087', '2096']
 CHAMPION_HOSTS = ['yandex', 'selectel', 'timeweb', 'firstbyte', 'gcore', 'vkcloud', 'mail.ru']
+# ВСТАВИТЬ ПОСЛЕ СУЩЕСТВУЮЩИХ КОНСТАНТ (TARGET_SNI, BLACK_SNI, ELITE_PORTS):
 
-urls = [
+# ============================================================================
+# ULTRA ELITE КОНСТАНТЫ
+# ============================================================================
+
+# УЛЬТРА-ЭЛИТНЫЕ SNI (из анализа платных серверов)
+ULTRA_ELITE_SNI = [
+    # Апловский CDN
+    "hls-svod.itunes.apple.com", "itunes.apple.com",
+    # Кастомные домены платных
+    "fastsync.xyz", "cloudlane.xyz", "powodzenia.xyz", 
+    "shiftline.xyz", "edgeport.xyz",
+    # Редкие поддомены ВК
+    "stats.vk-portal.net", "akashi.vk-portal.net",
+    # Иностранные ресурсы
+    "deepl.com", "www.samsung.com", "cdnjs.cloudflare.com",
+    # Наши старые элитные
+    "st.ozone.ru", "disk.yandex.ru", "api.mindbox.ru",
+    # Дополнительные редкие
+    "travel.yandex.ru", "egress.yandex.net", "sba.yandex.net",
+    "strm.yandex.net", "goya.rutube.ru",
+]
+
+# Паттерны платных провайдеров
+PREMIUM_PROVIDER_PATTERNS = {
+    "iskra": ['connect-iskra.ru', 'iskra-connect.xyz', 'fp=qq', 'xpaddingbytes='],
+    "tcp_reset": ['tcp-reset-club.net', 'tcp-reset-club'],
+    "abvpn": ['tcpnet.fun', 'tcpdoor.net', 'abvpn.ru', 'fp=firefox'],
+    "vezdehod": ['blh', 'rblx', 'gmn']
+}
+
+# Элитные порты (расширяем существующие)
+ELITE_PORTS = ['2053', '2083', '2087', '2096', '8447', '9443', '10443'] + ELITE_PORTS
+ELITE_PORTS = list(set(ELITE_PORTS))  # Убираем дублиurls = [
     "https://s3c3.001.gpucloud.ru/dggdu/xixz",
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
@@ -135,7 +168,62 @@ class MetaAggregator:
             if any(ts == sni or sni.endswith('.'+ts) for ts in TARGET_SNI): score += 300
         
         if any(h in parsed.netloc for h in CHAMPION_HOSTS): score += 50
-        return score
+            def calculate_score(self, node):
+    score = 0
+    n_l = node.lower()
+    
+    # ... ТВОЙ СУЩЕСТВУЮЩИЙ КОД ДО СЮДА ...
+    
+    # ========================================================================
+    # ДОБАВИТЬ ЭТОТ БЛОК ПОСЛЕ СУЩЕСТВУЮЩЕГО КОДА calculate_score,
+    # НО ПЕРЕД return max(score, 0)
+    # ========================================================================
+    
+    # ULTRA ELITE БОНУСЫ
+    sni = self._extract_sni(node)
+    
+    # 1. Ultra Elite SNI
+    if sni and any(elite_sni in sni for elite_sni in ULTRA_ELITE_SNI):
+        score += 300
+    
+    # 2. Особый бонус за itunes.apple.com
+    if sni and "itunes.apple.com" in sni:
+        score += 250
+    
+    # 3. Платные провайдеры
+    if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["iskra"]):
+        score += 200
+    
+    if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["tcp_reset"]):
+        score += 150
+    
+    if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["abvpn"]):
+        score += 180
+    
+    if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["vezdehod"]):
+        score += 130
+    
+    # 4. ALPN с декодированием
+    alpn_value = self._extract_alpn_decoded(node)
+    if alpn_value:
+        if 'h3' in alpn_value or 'h3-29' in alpn_value:
+            score += 80 if not node.startswith('vmess://') else 40
+        elif 'h2' in alpn_value:
+            score += 40 if not node.startswith('vmess://') else 20
+    
+    # 5. UUID частота (нужна будет статистика, добавим позже)
+    # Пока оставляем пустым
+    
+    # 6. Поддомены в SNI
+    if sni and (sni.count('.') >= 3 or any(sub in sni for sub in ['st.', 'api.', 'cdn.', 'disk.'])):
+        score += 100
+    
+    # 7. Не-chrome fingerprint
+    if any(fp in n_l for fp in ['fp=safari', 'fp=ios', 'fp=firefox', 'fp=edge']):
+        score += 80
+    
+    # КОНЕЦ ДОБАВЛЕНИЙ
+    return max(score, 0)
 
     def patch(self, node):
         try:
@@ -378,12 +466,105 @@ def main():
         name = agg.generate_server_name(geo_str, i+1, rep_val, score)
         
         processed_vless.append({'node': f"{patched}#{name}", 'geo': geo_str, 'score': score, 'raw': node})
-
+def main():
+    agg = MetaAggregator()
     def save(file, data):
         if not data: return
         with open(file, 'w', encoding='utf-8') as f: f.write("\n".join(data))
         print(f"💾 {file}: {len(data)}")
+print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Подготовка ultra elite...")
+     # 1. Обновляем статистику
+    agg._update_statistics([item['raw'] for item in processed_vless])
 
+    # 2. Обогащаем ноды данными
+    enriched_nodes = []
+    for node in all_unique:
+        score = agg.calculate_score(node)  # пересчитываем с учётом статистики
+        enriched_nodes.append({
+            'node': node,
+            'score': score,
+            'sni': agg._extract_sni(node),
+            'uuid': agg._extract_uuid(node)
+        })
+    
+    # 3. Сортируем
+    enriched_nodes.sort(key=lambda x: x['score'], reverse=True)
+    
+    # 4. Функция определения ultra elite
+    def is_ultra_elite(node_data):
+        node = node_data['node']
+        n_l = node.lower()
+        sni = node_data['sni']
+        score = node_data['score']
+        
+        ultra_score = 0
+        
+        # Elite SNI
+        if sni and any(elite_sni in sni for elite_sni in ULTRA_ELITE_SNI):
+            ultra_score += 3
+        
+        # Платные провайдеры
+        for patterns in PREMIUM_PROVIDER_PATTERNS.values():
+            if any(pattern in n_l for pattern in patterns):
+                ultra_score += 2
+        
+        # xHTTP
+        if 'type=xhttp' in n_l:
+            ultra_score += 2
+            if 'mode=auto' in n_l or 'mode=stream-up' in n_l:
+                ultra_score += 1
+            if 'xpaddingbytes=' in n_l:
+                ultra_score += 1
+        
+        # Качественные настройки
+        if 'flow=xtls-rprx-vision' in n_l:
+            ultra_score += 1
+        
+        if any(fp in n_l for fp in ['fp=safari', 'fp=ios', 'fp=firefox', 'fp=edge']):
+            ultra_score += 1
+        
+        # Элитные порты
+        if any(port in node for port in [f':{p}' for p in ELITE_PORTS]):
+            ultra_score += 2
+        
+        # UUID частота
+        uuid = node_data['uuid']
+        if uuid:
+            uuid_count = agg._get_uuid_frequency(uuid)
+            if uuid_count >= 10:
+                ultra_score += 3
+            elif uuid_count >= 5:
+                ultra_score += 2
+        
+        # Поддомены
+        if sni and (sni.count('.') >= 3 or any(sub in sni for sub in ['st.', 'api.', 'cdn.', 'disk.'])):
+            ultra_score += 1
+        
+        # Редкий SNI
+        if sni and agg._get_sni_frequency(sni) <= 5:
+            ultra_score += 2
+        
+        # Порог
+        if len(enriched_nodes) > 0:
+            top_30_threshold = enriched_nodes[int(len(enriched_nodes) * 0.3)]['score']
+        else:
+            top_30_threshold = 0
+        
+        return ultra_score >= 5 and score >= top_30_threshold
+    
+    # 5. Собираем ultra elite
+    ultra_elite_servers = []
+    for node_data in enriched_nodes:
+        if is_ultra_elite(node_data):
+            ultra_elite_servers.append(node_data['node'])
+        if len(ultra_elite_servers) >= 1000:
+            break
+    
+    # 6. Сохраняем
+    with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
+        f.write("\n".join(ultra_elite_servers))
+    print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} серверов")
+    
     save("hard_hidden.txt", [n['node'] for n in processed_vless[:1000] if n['score'] >= 500])
     save("mob.txt", [n['node'] for n in processed_vless if n['score'] >= 300][:1000])
     save("med.txt", [n['node'] for n in processed_vless if 150 <= n['score'] < 450][:2000])
@@ -420,6 +601,3 @@ def main():
 
 if __name__ == "__main__":
     main() 
-
-
-
