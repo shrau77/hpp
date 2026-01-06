@@ -578,7 +578,6 @@ def main():
     print(f"✅ Уникальных нод после фильтрации: {len(all_unique)}")
     print(f"✅ SS нод: {len(ss_nodes)}")
 
-    # ИСПРАВЛЕНО: используем enriched_nodes вместо all_unique
     # 1. Обновляем статистику
     print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Обновление статистики UUID/SNI...")
     agg._update_statistics(all_unique)
@@ -588,6 +587,7 @@ def main():
     enriched_nodes = []
     for i, node in enumerate(all_unique):
         score = agg.calculate_score(node)  # пересчитываем с учётом статистики
+        geo = agg.get_geo(node)
         enriched_nodes.append({
             'node': node,
             'score': score,
@@ -599,7 +599,6 @@ def main():
     # 3. Сортируем
     enriched_nodes.sort(key=lambda x: x['score'], reverse=True)
     
-    # ИСПРАВЛЕНО: используем enriched_nodes для vless_pool
     vless_pool = [n['node'] for n in enriched_nodes if not n['node'].startswith('ss://')][:5000]
     ss_pool = ss_nodes[:2000]
     
@@ -694,88 +693,86 @@ def main():
             return False
     
     # 5. Собираем ultra elite (С ТЕГАМИ КАК В business.txt)
-print(f"[{datetime.now().strftime('%H:%M:%S')}] 💎 Формирование ULTRA ELITE списка...")
-ultra_elite_servers = []
-
-# Берем ТОЛЬКО уже обработанные ноды из processed_vless (они уже имеют теги с флагами)
-elite_counter = 0
-for processed in processed_vless:
-    if elite_counter >= 1000:
-        break
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💎 Формирование ULTRA ELITE списка...")
+    ultra_elite_servers = []
     
-    # Находим эту ноду в enriched_nodes для проверки is_ultra_elite
-    node_data = None
-    for n in enriched_nodes:
-        if n['node'] == processed['raw']:
-            node_data = n
+    # Берем ТОЛЬКО уже обработанные ноды из processed_vless (они уже имеют теги с флагами)
+    elite_counter = 0
+    for processed in processed_vless:
+        if elite_counter >= 1000:
             break
-    
-    if node_data and is_ultra_elite(node_data):
-        ultra_elite_servers.append(processed['node'])  # Уже содержит тег с флагом
-        elite_counter += 1
-    
-    # Прогресс
-    if elite_counter > 0 and elite_counter % 100 == 0:
-        print(f"    ⏳ Найдено {elite_counter} ULTRA ELITE серверов")
+        
+        # Находим эту ноду в enriched_nodes для проверки is_ultra_elite
+        node_data = None
+        for n in enriched_nodes:
+            if n['node'] == processed['raw']:
+                node_data = n
+                break
+        
+        if node_data and is_ultra_elite(node_data):
+            ultra_elite_servers.append(processed['node'])  # Уже содержит тег с флагом
+            elite_counter += 1
+        
+        # Прогресс
+        if elite_counter > 0 and elite_counter % 100 == 0:
+            print(f"    ⏳ Найдено {elite_counter} ULTRA ELITE серверов")
 
-print(f"    ✅ Итог: {elite_counter} ULTRA ELITE серверов с тегами")
+    print(f"    ✅ Итог: {elite_counter} ULTRA ELITE серверов с тегами")
 
-# 6. Сохраняем ultra elite
-with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
-    f.write("\n".join(ultra_elite_servers))
-print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} ULTRA ELITE серверов")
+    # 6. Сохраняем ultra elite
+    with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
+        f.write("\n".join(ultra_elite_servers))
+    print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} ULTRA ELITE серверов")
     
-print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Подготовка ultra elite...")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Подготовка ultra elite...")
     
-# Сохранение остальных файлов
-print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение файлов...")
+    # Сохранение остальных файлов
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение файлов...")
 
-save("hard_hidden.txt", [n['node'] for n in processed_vless[:1000] if n['score'] >= 500])
-save("mob.txt", [n['node'] for n in processed_vless if n['score'] >= 300][:1000])
-save("med.txt", [n['node'] for n in processed_vless if 150 <= n['score'] < 450][:2000])
-save("vls.txt", [n['node'] for n in processed_vless])
+    save("hard_hidden.txt", [n['node'] for n in processed_vless[:1000] if n['score'] >= 500])
+    save("mob.txt", [n['node'] for n in processed_vless if n['score'] >= 300][:1000])
+    save("med.txt", [n['node'] for n in processed_vless if 150 <= n['score'] < 450][:2000])
+    save("vls.txt", [n['node'] for n in processed_vless])
 
-filtered_ss = []
-for ss_node in ss_pool:
+    filtered_ss = []
+    for ss_node in ss_pool:
+        try:
+            base_link = ss_node.split('#')[0]
+            if agg.get_geo(base_link) != "RU":
+                filtered_ss.append(ss_node)
+        except:
+            continue
+
+    save("ss.txt", filtered_ss[:2000])
+    save("all.txt", all_unique[:25000])
+
+    save("whitelist_cable.txt", cable_nodes)
+    save("whitelist_mobile.txt", mobile_nodes)
+
     try:
-        base_link = ss_node.split('#')[0]
-        if agg.get_geo(base_link) != "RU":
-            filtered_ss.append(ss_node)
-    except:
-        continue
+        shutil.copy("hard_hidden.txt", "business.txt")
+        shutil.copy("vls.txt", "vless_vmess.txt")
+        shutil.copy("all.txt", "sub.txt")
+        shutil.copy("all.txt", "all_configs.txt")
+        print("✅ Созданы дополнительные копии файлов")
+    except Exception as e:
+        print(f"⚠️ Ошибка копирования файлов: {e}")
 
-save("ss.txt", filtered_ss[:2000])
-save("all.txt", all_unique[:25000])
+    agg.cleanup_reputation()
+    with open(agg.rep_path, 'w', encoding='utf-8') as f:
+        json.dump(agg.reputation, f, indent=2)
+    print("✅ Обновлена репутация серверов")
 
-save("whitelist_cable.txt", cable_nodes)
-save("whitelist_mobile.txt", mobile_nodes)
+    if agg.reader:
+        agg.reader.close()
 
-try:
-    shutil.copy("hard_hidden.txt", "business.txt")
-    shutil.copy("vls.txt", "vless_vmess.txt")
-    shutil.copy("all.txt", "sub.txt")
-    shutil.copy("all.txt", "all_configs.txt")
-    print("✅ Созданы дополнительные копии файлов")
-except Exception as e:
-    print(f"⚠️ Ошибка копирования файлов: {e}")
-
-agg.cleanup_reputation()
-with open(agg.rep_path, 'w', encoding='utf-8') as f:
-    json.dump(agg.reputation, f, indent=2)
-print("✅ Обновлена репутация серверов")
-
-if agg.reader:
-    agg.reader.close()
-
-print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Скрипт успешно завершен.")
-print(f"📊 Итоги:")
-print(f"  - Всего нод: {len(raw_nodes)}")
-print(f"  - Уникальных: {len(all_unique)}")
-print(f"  - ULTRA ELITE: {len(ultra_elite_servers)}")
-print(f"  - Обработано VLESS: {len(processed_vless)}")
-print(f"  - SS нод: {len(filtered_ss)}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Скрипт успешно завершен.")
+    print(f"📊 Итоги:")
+    print(f"  - Всего нод: {len(raw_nodes)}")
+    print(f"  - Уникальных: {len(all_unique)}")
+    print(f"  - ULTRA ELITE: {len(ultra_elite_servers)}")
+    print(f"  - Обработано VLESS: {len(processed_vless)}")
+    print(f"  - SS нод: {len(filtered_ss)}")
 
 if __name__ == "__main__":
-    main()
-
-
+    main() 
