@@ -1,0 +1,1 @@
+trojan://5a2c16f9@111.118.118.177:12399?sni=snippets.kkii.eu.org&peer=snippets.kkii.eu.org&security=tls#KR   TROJAN-TCP-TLS - Gyeongbuk Cable TV  111.118.118.177
