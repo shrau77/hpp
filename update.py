@@ -4,10 +4,8 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, unquote
 from concurrent.futures import ThreadPoolExecutor
 
 # ==============================================================================
-# ⚙️ НАСТРОЙКИ И КОНСТАНТЫ
+# ⚙️ 1. СПИСОК ИСТОЧНИКОВ (Сюда вставь свои, если они отличаются)
 # ==============================================================================
-
-# 1. ИСТОЧНИКИ (ТВОЙ СПИСОК)
 urls = [
     "https://s3c3.001.gpucloud.ru/dggdu/xixz",
     "https://raw.githubusercontent.com/HikaruApps/WhiteLattice/refs/heads/main/subscriptions/config.txt", 
@@ -44,29 +42,32 @@ urls = [
     *[f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" for i in range(1, 27)]
 ]
 
-# 2. ЦЕЛЕВЫЕ SNI (WhiteList: Полная версия)
-# ВСТАВЬ ЭТО ВМЕСТО ТЕКУЩЕГО TARGET_SNI
+# ==============================================================================
+# ⚙️ 2. КОНФИГУРАЦИЯ И СПИСКИ (FULL VERSION)
+# ==============================================================================
+
+# Полный список SNI (ничего не вырезано)
 TARGET_SNI = list(set([
-    # --- 👑 PLATINUM TIER ---
+    # 👑 PLATINUM (Неприкасаемые)
     "max.ru", "web.max.ru", "download.max.ru", "dev.max.ru", "static.max.ru", "api.max.ru",
     "gosuslugi.ru", "www.mos.ru", "nalog.ru", "esia.gosuslugi.ru",
     "smartcaptcha.yandexcloud.net", "sso.passport.yandex.ru", "api-maps.yandex.ru",
     
-    # --- 🏦 BANKS & FINANCE ---
+    # 🏦 BANKS & FINANCE
     "cdn.tbank.ru", "online.sberbank.ru", "esa-res.online.sberbank.ru", "sberbank.ru",
     "alfabank.ru", "alfabank.st", "alfabank.servicecdn.ru",
     "www.unicreditbank.ru", "www.gazprombank.ru", "cdn.gpb.ru", "mkb.ru", "www.open.ru",
     "www.psbank.ru", "www.raiffeisen.ru", "nspk.ru", "mir-platform.ru",
     "imgproxy.cdn-tinkoff.ru", "mddc.tinkoff.ru", "id.tbank.ru", "tmsg.tbank.ru",
     
-    # --- 🛍 RETAIL & MARKETPLACES ---
+    # 🛍 RETAIL & MARKETPLACES
     "ads.x5.ru", "www.x5.ru", "www.magnit.com", "magnit-ru.injector.3ebra.net",
     "www.ozon.ru", "ir.ozone.ru", "vt-1.ozone.ru", "io.ozone.ru", "st.ozone.ru", "xapi.ozon.ru",
     "wb.ru", "wildberries.ru", "user-geo-data.wildberries.ru", "banners-website.wildberries.ru",
     "c.dns-shop.ru", "restapi.dns-shop.ru", "lemanapro.ru", "edadeal.yandex.ru",
     "avito.ru", "sntr.avito.ru", "api.apteka.ru", "static.apteka.ru",
     
-    # --- 📱 SOCIAL & MEDIA ---
+    # 📱 SOCIAL & MEDIA
     "vk.com", "m.vk.com", "eh.vk.com", "vkvideo.ru", "login.vk.com",
     "sun9-38.userapi.com", "sun6-21.userapi.com", "sun6-20.userapi.com", "sun6-22.userapi.com",
     "ok.ru", "st.okcdn.ru", "i.mycdn.me", 
@@ -77,7 +78,7 @@ TARGET_SNI = list(set([
     "www.ivi.ru", "api2.ivi.ru", "premier.one", "fb-cdn.premier.one",
     "pikabu.ru", "www.rbc.ru", "s.rbk.ru", "lenta.ru", "ria.ru", "www.kp.ru",
     
-    # --- 🚂 SERVICES & UTILS ---
+    # 🚂 SERVICES & UTILS
     "www.rzd.ru", "ticket.rzd.ru", "www.pochta.ru", "passport.pochta.ru",
     "www.tutu.ru", "cdn1.tu-tu.ru",
     "2gis.ru", "d-assets.2gis.ru", "s1.bss.2gis.com",
@@ -85,7 +86,7 @@ TARGET_SNI = list(set([
     "hh.ru", "i.hh.ru", "hhcdn.ru",
     "auto.ru", "drom.ru", "s11.auto.drom.ru", "c.rdrom.ru", "farpost.ru", "drive2.ru",
     
-    # --- 📡 TELECOM & TECH ---
+    # 📡 TELECOM & TECH
     "mts.ru", "login.mts.ru", "api.a.mts.ru", "mtscdn.ru", "kion.ru",
     "beeline.ru", "static.beeline.ru", "moskva.beeline.ru",
     "megafon.ru", "moscow.megafon.ru",
@@ -94,11 +95,10 @@ TARGET_SNI = list(set([
     "counter.yadro.ru", "top-fwz1.mail.ru", "rs.mail.ru",
     "servicepipe.ru", "files.icq.net",
     
-    # --- 💎 RARE / EXOTIC (Из дампов) ---
+    # 💎 RARE / EXOTIC
     "video.intfreed.ru", "khabarovsk.geodema.network", "my.oversecure.pro"
 ]))
 
-# 3. ULTRA ELITE & BLACKLIST
 ULTRA_ELITE_SNI = [
     "hls-svod.itunes.apple.com", "itunes.apple.com", "xp.apple.com",
     "fastsync.xyz", "cloudlane.xyz", "powodzenia.xyz", "shiftline.xyz", "edgeport.xyz",
@@ -106,33 +106,30 @@ ULTRA_ELITE_SNI = [
     "cdn.tbank.ru", "sso.passport.yandex.ru", "download.max.ru"
 ]
 
-BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'porn', 'pusytroller', 'hubp.de', 'dynv6.net']
+BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn', 'pusytroller', 'hubp.de', 'dynv6.net']
 ELITE_PORTS = ['2053', '2083', '2087', '2096', '8443', '443']
 
-# 4. ASN КАРТА (Для определения элиты по IP)
+# Карта "Своих" IP
 RU_ASN_MAP = {
     "51.250.0.0/16": "YANDEX", "84.201.128.0/17": "YANDEX", "158.160.0.0/16": "YANDEX",
     "95.163.0.0/16": "SELECTEL", "87.242.0.0/16": "SELECTEL", 
-    "217.16.0.0/16": "MTS-AEZA", "188.93.16.0/20": "AEZA",
-    "46.17.0.0/16": "FIRSTBYTE", "212.34.138.0/24": "G-CORE"
+    "217.16.0.0/16": "MTS-AEZA", "46.17.0.0/16": "FIRSTBYTE",
+    "188.93.16.0/20": "AEZA", "77.246.100.0/22": "SERV-PIPE",
+    "212.34.138.0/24": "G-CORE"
 }
 
 # ==============================================================================
-# 🧠 ЛОГИКА
+# 🧠 ОСНОВНОЙ КОД
 # ==============================================================================
 
 def update_geoip():
-    """Качаем GeoLite2 если нет или старый"""
+    """Авто-скачивание базы GeoIP"""
     db_path = 'GeoLite2-Country.mmdb'
     mirror_url = "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb"
     
-    need_download = False
-    if not os.path.exists(db_path): need_download = True
-    elif (time.time() - os.path.getmtime(db_path)) > 3 * 86400: need_download = True
-            
-    if need_download:
+    if not os.path.exists(db_path) or (time.time() - os.path.getmtime(db_path)) > 3 * 86400:
         try:
-            print("🌍 Updating GeoIP Database...")
+            print("🌍 Updating GeoIP...")
             r = requests.get(mirror_url, stream=True, timeout=20)
             if r.status_code == 200:
                 with open(db_path, 'wb') as f: shutil.copyfileobj(r.raw, f)
@@ -143,7 +140,6 @@ class MetaAggregator:
         self.rep_path = 'reputation.json'
         self.reputation = self._load_json(self.rep_path)
         self.reader = geoip2.database.Reader('GeoLite2-Country.mmdb') if os.path.exists('GeoLite2-Country.mmdb') else None
-        self.uuid_counter = {}
         
     def _load_json(self, path):
         if os.path.exists(path):
@@ -176,27 +172,32 @@ class MetaAggregator:
         score = 0
         n_l = node.lower()
         
-        # Репутация
+        # 1. Reputation
         node_id = self.get_node_id(node)
         score += self.reputation.get(node_id, {}).get('count', 0) * 50
 
-        # Технологии
+        # 2. Tech
         if 'xtls-rprx-vision' in n_l: score += 300
         if 'type=xhttp' in n_l: score += 400
         if 'packetencoding=xudp' in n_l: score += 100
         if 'hysteria2' in n_l or 'tuic' in n_l: score += 250
         
-        # SNI
+        # 3. Ports
+        parsed = urlparse(node)
+        port = parsed.netloc.split(':')[-1] if ':' in parsed.netloc else '443'
+        if port in ELITE_PORTS: score += 100
+
+        # 4. SNI Logic
         sni = self._extract_sni(node)
         if sni:
-            if 'max.ru' in sni: score += 1000
+            if 'max.ru' in sni: score += 1000 # 👑 PLATINUM
             elif any(s in sni for s in ULTRA_ELITE_SNI): score += 500
             elif any(ts == sni or sni.endswith('.'+ts) for ts in TARGET_SNI): score += 300
+            
             if any(s in sni for s in BLACK_SNI): score -= 5000
 
-        # ASN
+        # 5. ASN Ghost Logic
         try:
-            parsed = urlparse(node)
             host = parsed.netloc.split('@')[-1].split(':')[0]
             if self._check_asn(host)[0]: score += 500
         except: pass
@@ -204,31 +205,61 @@ class MetaAggregator:
         return max(score, 0)
 
     def patch(self, node):
+        """
+        БРОНЕБОЙНЫЙ ПАТЧЕР v3.0
+        Восстановлена логика слияния параметров URL и JSON
+        """
         try:
-            # VMESS FIX
+            # --- VMESS ---
             if node.startswith('vmess://'):
-                base = node[8:].split('?')[0].split('#')[0]
-                missing = len(base) % 4
-                if missing: base += '=' * (4 - missing)
+                base_part = node[8:].split('?')[0].split('#')[0]
+                # Fix padding
+                missing = len(base_part) % 4
+                if missing: base_part += '=' * (4 - missing)
+                
                 try:
-                    decoded = base64.b64decode(base).decode('utf-8', errors='ignore')
-                    if '{' in decoded: decoded = decoded[decoded.find('{'):decoded.rfind('}')+1]
+                    decoded = base64.b64decode(base_part).decode('utf-8', errors='ignore')
+                    # Clean junk before {
+                    if '{' in decoded:
+                        decoded = decoded[decoded.find('{'):decoded.rfind('}')+1]
                     conf = json.loads(decoded)
+                    
+                    # Merge params from URL into JSON (CRITICAL!)
+                    parsed = urlparse(node)
+                    query = parse_qs(parsed.query)
+                    
+                    mapping = {'sni': 'sni', 'host': 'host', 'path': 'path', 'fp': 'fp', 'alpn': 'alpn', 'type': 'net'}
+                    for q_key, j_key in mapping.items():
+                        if q_key in query and query[q_key][0]:
+                            conf[j_key] = query[q_key][0]
+                            
+                    # Force elite settings
                     if not conf.get('scy'): conf['scy'] = 'auto'
-                    return f"vmess://{base64.b64encode(json.dumps(conf).encode()).decode()}"
+                    
+                    new_b64 = base64.b64encode(json.dumps(conf).encode()).decode()
+                    return f"vmess://{new_b64}"
                 except: return node
 
-            # VLESS/TROJAN PATCH
+            # --- VLESS / TROJAN ---
             parsed = urlparse(node)
             query = parse_qs(parsed.query)
             
-            if 'packetEncoding' not in query: query['packetEncoding'] = ['xudp']
-            if 'fp' not in query: query['fp'] = ['chrome']
+            # xUDP injection
+            if 'packetEncoding' not in query:
+                query['packetEncoding'] = ['xudp']
             
+            # FP fix
+            if 'fp' not in query:
+                query['fp'] = ['chrome']
+            
+            # SID fix
             if 'security' in query and query['security'][0] == 'reality':
-                if 'pbk' in query and 'sid' not in query: query['sid'] = ['1a']
+                if 'pbk' in query and 'sid' not in query:
+                    query['sid'] = ['1a']
 
-            return urlunparse(parsed._replace(query=urlencode(query, doseq=True)))
+            new_query = urlencode(query, doseq=True)
+            return urlunparse(parsed._replace(query=new_query))
+            
         except: return node
 
     def get_geo_info(self, node):
@@ -245,6 +276,7 @@ class MetaAggregator:
                 except: pass
             
             if host.endswith('.ru'): return "RU", ""
+            if host.endswith('.kz'): return "KZ", ""
             return "UN", ""
         except: return "UN", ""
 
@@ -261,21 +293,26 @@ class MetaAggregator:
         elif 'tbank' in str(sni): provider = "T-BANK"
         
         flag = "".join(chr(ord(c.upper()) + 127397) for c in geo) if geo != "UN" else "🌐"
-        return " ".join([p for p in [flag, geo, provider, quality] if p])
+        
+        parts = [flag, geo, provider, quality]
+        return " ".join([p for p in parts if p])
 
 def save_file(filename, data):
     if not data: return
-    with open(filename, 'w', encoding='utf-8') as f: f.write("\n".join(data))
-    b64 = base64.b64encode("\n".join(data).encode('utf-8')).decode('utf-8')
-    with open(filename + ".b64", 'w', encoding='utf-8') as f: f.write(b64)
-    print(f"💾 Saved {filename} ({len(data)})")
+    try:
+        with open(filename, 'w', encoding='utf-8') as f: f.write("\n".join(data))
+        b64 = base64.b64encode("\n".join(data).encode('utf-8')).decode('utf-8')
+        with open(filename + ".b64", 'w', encoding='utf-8') as f: f.write(b64)
+        print(f"💾 Saved {filename} ({len(data)})")
+    except Exception as e:
+        print(f"❌ Error saving {filename}: {e}")
 
 def main():
     update_geoip()
     agg = MetaAggregator()
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Fetching...")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Started...")
     
-    # Headers для обхода 403
+    # Headers для обхода защит
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
     
     def fetch(url):
@@ -298,12 +335,11 @@ def main():
     # --- PROCESSING ---
     unique_map = {}
     ss_list = []
-    
-    # Списки для специфичных фильтров
-    mobile_list = []
+    mobile_list = [] # Для whitelist_mobile
     
     for node in raw_nodes:
         try:
+            # SS отдельно
             if node.startswith('ss://'):
                 if node not in ss_list: ss_list.append(node)
                 continue
@@ -322,15 +358,16 @@ def main():
                 sni = agg._extract_sni(patched)
                 unique_map[key] = {'node': patched, 'score': score, 'geo': geo, 'asn': asn, 'sni': sni}
                 
-                # Собираем Mobile (MTS/Beeline/Megafon)
+                # Mobile Filter (Для совместимости)
                 if sni and any(x in sni for x in ['mts', 'beeline', 'megafon', 't2', 'yota']):
                     mobile_list.append(patched)
                     
         except: continue
 
     sorted_nodes = sorted(unique_map.values(), key=lambda x: x['score'], reverse=True)
-    
-    # --- DISTRIBUTION ---
+    print(f"📉 Unique: {len(sorted_nodes)} + {len(ss_list)} SS")
+
+    # --- SORTING ---
     ultra_elite = []
     business = []
     leaked_gems = []
@@ -346,24 +383,23 @@ def main():
         elif 'type=xhttp' in item['node'] or (item['sni'] and 'max.ru' in str(item['sni'])):
             leaked_gems.append(node_str)
 
-    # --- SAVING ---
+    # --- SAVING (FULL COMPATIBILITY) ---
     save_file("ultra_elite.txt", ultra_elite)
     save_file("business.txt", business)
     save_file("leaked_gems.txt", leaked_gems)
     save_file("ss.txt", ss_list)
     
-    # Legacy & Specific files
-    save_file("hard_hidden.txt", business) # Copy of business
-    save_file("whitelist_mobile.txt", mobile_list) # Mobile specific
+    # Legacy files
+    save_file("hard_hidden.txt", business)
+    save_file("whitelist_mobile.txt", mobile_list)
     
-    # All (mixed vless + ss)
-    all_final = [v['node'] for v in sorted_nodes[:12000]] + ss_list[:3000]
+    # All files (Limit increased)
+    all_final = [v['node'] for v in sorted_nodes[:20000]] + ss_list[:5000]
     save_file("all.txt", all_final)
-    save_file("vless_vmess.txt", [v['node'] for v in sorted_nodes[:10000]]) # Without SS
+    save_file("vless_vmess.txt", [v['node'] for v in sorted_nodes[:15000]])
 
-    # Stats update
+    # Stats
     with open(agg.rep_path, 'w', encoding='utf-8') as f:
-        # Simple stats update (mockup logic for speed)
         for item in sorted_nodes:
             nid = agg.get_node_id(item['node'])
             if nid not in agg.reputation: agg.reputation[nid] = {'count': 0, 'last_seen': 0}
@@ -371,7 +407,7 @@ def main():
             agg.reputation[nid]['last_seen'] = int(time.time())
         json.dump(agg.reputation, f)
 
-    print("🏁 Update Complete!")
+    print(f"🏁 DONE. Elite: {len(ultra_elite)}, Gems: {len(leaked_gems)}")
 
 if __name__ == "__main__":
-    main()
+    main() 
