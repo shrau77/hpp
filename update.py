@@ -479,7 +479,7 @@ class MetaAggregator:
         # Формат: FLAG GEO-PROV-INDEX-REP QUALITY
         return f"{flag} {geo}{provider}-{index:05d}-REP({rep_count}) {quality}"
 
-def cleanup_reputation(self, max_age_days=30, max_entries=15000): # Increased limit
+    def cleanup_reputation(self, max_age_days=30, max_entries=15000): # Increased limit
         now = int(time.time())
         cutoff = now - (max_age_days * 86400)
         clean_db = {k: v for k, v in self.reputation.items() if v.get('last_seen', 0) > cutoff}
@@ -487,7 +487,7 @@ def cleanup_reputation(self, max_age_days=30, max_entries=15000): # Increased li
             sorted_rep = sorted(clean_db.items(), key=lambda x: x[1]['count'], reverse=True)
             clean_db = dict(sorted_rep[:max_entries])
         self.reputation = clean_db
-def save(file, data):
+    def save(file, data):
     """Функция сохранения файлов + генерация Base64 версии (NEW)"""
     if not data: 
         return
@@ -678,7 +678,7 @@ def main():
             'sni': item['sni'],
             'node_clean': node
         })
-        # 7. Распределение по категориям (NEW LOGIC)
+# 7. Распределение по категориям (NEW LOGIC)
     ultra_elite_list = []
     business_list = []
     leaked_gems_list = []
@@ -765,5 +765,4 @@ def main():
     print(f"  - 🌐 Total (All): {len(all_content)}")
 
 if __name__ == "__main__":
-    main()
-
+    main() 
