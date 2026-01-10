@@ -1,49 +1,10 @@
-import requests, base64, re, os, socket, geoip2.database, json, hashlib, shutil, time, ipaddress
+import requests, base64, re, os, socket, geoip2.database, json, hashlib, shutil, time
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, unquote
 from concurrent.futures import ThreadPoolExecutor
 
-# ============================================================================
-# ⚙️ 0. ПРЕДВАРИТЕЛЬНАЯ НАСТРОЙКА
-# ============================================================================
-
-def update_geoip():
-    """Авто-скачивание базы GeoIP"""
-    db_path = 'GeoLite2-Country.mmdb'
-    mirror_url = "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb"
-    
-    if not os.path.exists(db_path) or (time.time() - os.path.getmtime(db_path)) > 3 * 86400:
-        try:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] 🌍 Updating GeoIP database...")
-            r = requests.get(mirror_url, stream=True, timeout=20)
-            if r.status_code == 200:
-                with open(db_path, 'wb') as f: shutil.copyfileobj(r.raw, f)
-                print("✅ GeoIP database updated.")
-        except Exception as e: 
-            print(f"⚠️ GeoIP update failed: {e}")
-
-# ============================================================================
-# ⚙️ 1. СПИСКИ И КОНСТАНТЫ
-# ============================================================================
-
-# Карта "Своих" IP (ASN)
-RU_ASN_MAP = {
-    "51.250.0.0/16": "YANDEX", "84.201.128.0/17": "YANDEX", "158.160.0.0/16": "YANDEX",
-    "95.163.0.0/16": "SELECTEL", "87.242.0.0/16": "SELECTEL", 
-    "217.16.0.0/16": "MTS-AEZA", "46.17.0.0/16": "FIRSTBYTE",
-    "188.93.16.0/20": "AEZA", "77.246.100.0/22": "SERV-PIPE",
-    "212.34.138.0/24": "G-CORE"
-}
-
-# Объединенный список SNI
+# --- НАСТРОЙКИ ---
 TARGET_SNI = list(set([
-    # 👑 PLATINUM
-    "max.ru", "web.max.ru", "download.max.ru", "dev.max.ru", "static.max.ru", "api.max.ru",
-    "gosuslugi.ru", "www.mos.ru", "nalog.ru", "esia.gosuslugi.ru",
-    "smartcaptcha.yandexcloud.net", "sso.passport.yandex.ru", "api-maps.yandex.ru",
-    "video.intfreed.ru", "khabarovsk.geodema.network", "my.oversecure.pro",
-    
-    # Исходный список
     "www.unicreditbank.ru", "www.gazprombank.ru", "cdn.gpb.ru", "mkb.ru", "www.open.ru",
     "cobrowsing.tbank.ru", "cdn.rosbank.ru", "www.psbank.ru", "www.raiffeisen.ru",
     "www.rzd.ru", "st.gismeteo.st", "stat-api.gismeteo.net", "c.dns-shop.ru",
@@ -83,26 +44,30 @@ TARGET_SNI = list(set([
     "vk.com", "www.wildberries.ru", "www.ozon.ru", "ok.ru", "yandex.ru"
 ]))
 
-# Список черных SNI
-BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn', 'pusytroller', 'hubp.de', 'dynv6.net']
-
-# Элитные порты
-ELITE_PORTS = ['2053', '2083', '2087', '2096', '8447', '9443', '10443', '8443', '443']
-ELITE_PORTS = list(set(ELITE_PORTS))
-
+BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn']
+ELITE_PORTS = ['2053', '2083', '2087', '2096']
 CHAMPION_HOSTS = ['yandex', 'selectel', 'timeweb', 'firstbyte', 'gcore', 'vkcloud', 'mail.ru']
 
-# УЛЬТРА-ЭЛИТНЫЕ SNI
+# ============================================================================
+# ULTRA ELITE КОНСТАНТЫ
+# ============================================================================
+
+# УЛЬТРА-ЭЛИТНЫЕ SNI (из анализа платных серверов)
 ULTRA_ELITE_SNI = [
-    "hls-svod.itunes.apple.com", "itunes.apple.com", "xp.apple.com",
+    # Апловский CDN
+    "hls-svod.itunes.apple.com", "itunes.apple.com",
+    # Кастомные домены платных
     "fastsync.xyz", "cloudlane.xyz", "powodzenia.xyz", 
-    "shiftline.xyz", "edgeport.xyz", "zoomzoom.xyz", "runstream.xyz", "softpipe.xyz",
+    "shiftline.xyz", "edgeport.xyz",
+    # Редкие поддомены ВК
     "stats.vk-portal.net", "akashi.vk-portal.net",
+    # Иностранные ресурсы
     "deepl.com", "www.samsung.com", "cdnjs.cloudflare.com",
+    # Наши старые элитные
     "st.ozone.ru", "disk.yandex.ru", "api.mindbox.ru",
+    # Дополнительные редкие
     "travel.yandex.ru", "egress.yandex.net", "sba.yandex.net",
     "strm.yandex.net", "goya.rutube.ru",
-    "cdn.tbank.ru", "sso.passport.yandex.ru", "download.max.ru"
 ]
 
 # Паттерны платных провайдеров
@@ -113,7 +78,10 @@ PREMIUM_PROVIDER_PATTERNS = {
     "vezdehod": ['blh', 'rblx', 'gmn']
 }
 
-# Источники (Полный список)
+# Элитные порты (расширяем существующие)
+ELITE_PORTS = ['2053', '2083', '2087', '2096', '8447', '9443', '10443'] + ELITE_PORTS
+ELITE_PORTS = list(set(ELITE_PORTS))  # Убираем дубли
+
 urls = [
     "https://s3c3.001.gpucloud.ru/dggdu/xixz",
     "https://raw.githubusercontent.com/HikaruApps/WhiteLattice/refs/heads/main/subscriptions/config.txt", 
@@ -155,9 +123,10 @@ class MetaAggregator:
         self.rep_path = 'reputation.json'
         self.reputation = self._load_json(self.rep_path)
         self.geo_cache = {}
-        # Загрузка базы GeoLite2 происходит в main
         self.reader = geoip2.database.Reader('GeoLite2-Country.mmdb') if os.path.exists('GeoLite2-Country.mmdb') else None
+        self.server_counter = {}
         
+        # ДОБАВЛЕНО: новые счетчики для ULTRA ELITE
         self.uuid_counter = {}
         self.sni_counter = {}
     
@@ -166,266 +135,382 @@ class MetaAggregator:
             try:
                 with open(path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    cleaned = {}
                     for k, v in data.items():
-                        if isinstance(v, int): 
-                            cleaned[k] = {"count": v, "last_seen": int(time.time())}
-                        elif isinstance(v, dict):
-                            cleaned[k] = v
-                    return cleaned
+                        if isinstance(v, int): data[k] = {"count": v, "last_seen": int(time.time())}
+                    return data
             except: return {}
         return {}
-    
-    def _check_asn(self, ip):
-        """Проверка ASN"""
-        try:
-            # FIX: Если IP похож на IP, проверяем. Если нет - игнорируем, чтобы не крашилось
-            if re.match(r'^\d+\.\d+\.\d+\.\d+$', ip):
-                ip_obj = ipaddress.ip_address(ip)
-                for net, name in RU_ASN_MAP.items():
-                    if ip_obj in ipaddress.ip_network(net):
-                        return name, "RU"
-        except: 
-            pass
-        return None, None
 
+    # ДОБАВЛЕННЫЕ МЕТОДЫ ДЛЯ ULTRA ELITE
     def _extract_alpn_decoded(self, node):
-        """Извлекает и декодирует ALPN"""
+        """Извлекает и декодирует ALPN для любого протокола"""
         try:
-            patterns = [r'alpn=([^&?\s]+)', r'"alpn":"([^"]+)"', r"'alpn':'([^']+)'"]
+            patterns = [
+                r'alpn=([^&?\s]+)',
+                r'"alpn":"([^"]+)"',
+                r"'alpn':'([^']+)'",
+            ]
+            
             for pattern in patterns:
                 match = re.search(pattern, node, re.IGNORECASE)
                 if match:
                     alpn_value = match.group(1)
-                    try: alpn_value = unquote(alpn_value)
-                    except: pass
-                    return alpn_value.replace('\\"', '"').replace("\\'", "'")
-        except: pass
-        return None
+                    try:
+                        alpn_value = unquote(alpn_value)
+                    except:
+                        pass
+                    alpn_value = alpn_value.replace('\\"', '"').replace("\\'", "'")
+                    return alpn_value
+            return None
+        except:
+            return None
     
-    def _extract_uuid(self, node):
-        """Извлекает UUID (Safe Mode)"""
-        try:
-            if node.startswith('vmess://'):
-                # Для VMess пытаемся декодировать, если не вышло - ищем по регексу в base64 (редко, но бывает)
-                try:
-                    base_part = node[8:].split('?')[0].split('#')[0]
-                    missing = len(base_part) % 4
-                    if missing: base_part += '=' * (4 - missing)
-                    decoded = base64.b64decode(base_part).decode('utf-8', errors='ignore')
-                    # Пробуем найти JSON
-                    if '{' in decoded:
-                        try:
-                            js = json.loads(decoded[decoded.find('{'):decoded.rfind('}')+1])
-                            return js.get('id', '')
-                        except: pass
-                except: pass
-            
-            # Универсальный Regex для UUID в строке
-            match = re.search(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', node, re.IGNORECASE)
-            if match: return match.group(0)
-            
-            # Для Vless/Trojan если нет UUID (например, password), берем user part
-            if node.startswith(('vless://', 'trojan://')):
-                return urlparse(node).netloc.split('@')[0]
-                
-        except: pass
-        return None
-    
-    def _extract_sni(self, node):
-        """Извлекает SNI"""
-        try:
-            match = re.search(r'sni=([^&?#\s]+)', node.lower())
-            if match: return match.group(1).strip('.')
-            # Для VMess внутри JSON
-            if 'vmess://' in node:
-                # (Упрощенная проверка без полного декода для скорости, если строка открыта)
-                pass 
-        except: pass
-        return None
     def _get_uuid_frequency(self, uuid):
         return self.uuid_counter.get(uuid, 0)
     
     def _get_sni_frequency(self, sni):
         return self.sni_counter.get(sni, 0)
-
+    
     def _update_statistics(self, nodes):
         """Обновляем статистику UUID и SNI"""
         try:
             self.uuid_counter.clear()
             self.sni_counter.clear()
+            
             for node in nodes:
                 try:
                     uuid = self._extract_uuid(node)
-                    if uuid: self.uuid_counter[uuid] = self.uuid_counter.get(uuid, 0) + 1
+                    if uuid:
+                        self.uuid_counter[uuid] = self.uuid_counter.get(uuid, 0) + 1
+                    
                     sni = self._extract_sni(node)
-                    if sni: self.sni_counter[sni] = self.sni_counter.get(sni, 0) + 1
-                except: continue
-        except: pass
+                    if sni:
+                        self.sni_counter[sni] = self.sni_counter.get(sni, 0) + 1
+                except:
+                    continue
+        except:
+            pass
+    
+    # ДОБАВЛЕНО: метод извлечения UUID
+    def _extract_uuid(self, node):
+        """Извлекает UUID из ноды"""
+        try:
+            if node.startswith('vmess://'):
+                # Пробуем извлечь из Base64
+                base_part = node[8:].split('?')[0]
+                try:
+                    missing_padding = len(base_part) % 4
+                    if missing_padding:
+                        base_part += '=' * (4 - missing_padding)
+                    decoded = base64.b64decode(base_part).decode('utf-8')
+                    json_data = json.loads(decoded)
+                    return json_data.get('id')
+                except:
+                    # Пробуем найти UUID в строке
+                    uuid_match = re.search(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', node, re.IGNORECASE)
+                    if uuid_match:
+                        return uuid_match.group(0)
+            elif node.startswith(('vless://', 'trojan://')):
+                # Извлекаем из URL
+                parsed = urlparse(node)
+                user_info = parsed.netloc.split('@')[0]
+                if user_info and '@' in parsed.netloc:
+                    return user_info
+        except:
+            pass
+        return None
+    
+    # ДОБАВЛЕНО: метод извлечения SNI
+    def _extract_sni(self, node):
+        """Извлекает SNI из ноды"""
+        try:
+            match = re.search(r'sni=([^&?#\s]+)', node.lower())
+            if match:
+                return match.group(1).strip('.')
+        except:
+            pass
+        return None
+
+    # ДОБАВЛЕНО: метод извлечения протокола
+    def _extract_protocol(self, node):
+        """Извлекает тип протокола из ноды"""
+        try:
+            n_l = node.lower()
+            
+            # xHTTP проверка
+            if 'type=xhttp' in n_l:
+                return 'xHTTP'
+            
+            # xUDP проверка (может быть упомянут как xudp или в параметре congestion)
+            if 'xudp' in n_l or ('type=udp' in n_l and 'congestion=' in n_l):
+                return 'xUDP'
+            
+            # Другие протоколы
+            if node.startswith('vmess://'):
+                return 'VMess'
+            elif node.startswith('vless://'):
+                if 'xtls-rprx-vision' in n_l:
+                    return 'VLESS-Vision'
+                return 'VLESS'
+            elif node.startswith('trojan://'):
+                return 'Trojan'
+            elif 'hysteria2' in n_l or 'hy2' in n_l:
+                return 'Hysteria2'
+            elif 'tuic' in n_l:
+                return 'TUIC'
+            
+            return None
+        except:
+            return None
 
     def get_node_id(self, node):
-        """Хеш конфига без имени для идентификации в репутации"""
         return hashlib.md5(node.split('#')[0].encode()).hexdigest()
 
     def get_fp(self, node):
-        """Генерация Fingerprint на основе хеша ссылки"""
         hash_val = int(self.get_node_id(node), 16)
         choice = hash_val % 100
-        if choice < 50: return "chrome"
-        if choice < 75: return "ios"
-        if choice < 90: return "edge"
-        return "safari"
+        if choice < 65: return "chrome"
+        if choice < 85: return "edge"
+        if choice < 95: return "safari"
+        return "ios"
 
     def calculate_score(self, node):
         score = 0
         n_l = node.lower()
-        try:
-            parsed = urlparse(node)
-        except: return 0
+        parsed = urlparse(node)
         
-        # 1. Reputation (История жизни сервера)
         node_id = self.get_node_id(node)
         rep_data = self.reputation.get(node_id, {})
         score += rep_data.get('count', 0) * 50
 
-        # 2. Технические бонусы
-        if 'xtls-rprx-vision' in n_l: score += 300
-        if 'type=xhttp' in n_l: score += 400          
-        # XUDP больше не бонусится принудительно, но если есть - не штрафуем
-        if any(p in n_l for p in ['tuic', 'hysteria2', 'hy2']): score += 250
-        if 'trojan' in n_l: score += 100
-        if 'reality' in n_l or 'security=reality' in n_l: score += 200
-        
-        # 3. Порты
-        try:
-            port = parsed.netloc.split(':')[-1]
-            if port in ELITE_PORTS: score += 250
-            elif port == '443': score += 100
-        except: pass
-
-        # 4. SNI & Host анализ
-        sni = self._extract_sni(node)
-        if sni:
-            if 'max.ru' in sni: score += 1000 
-            if any(elite_sni in sni for elite_sni in ULTRA_ELITE_SNI): score += 500
-            
-            if any(s in sni for s in BLACK_SNI): score -= 5000
-            if any(ts == sni or sni.endswith('.'+ts) for ts in TARGET_SNI): score += 300
-            if "itunes.apple.com" in sni: score += 250
-            
-            # Бонус за субдомены (часто признак чистого CDN)
-            if (sni.count('.') >= 3 or any(sub in sni for sub in ['st.', 'api.', 'cdn.', 'disk.'])):
+        # ДОБАВЛЕНО: Приоритетные протоколы 2026 года
+        if 'type=xhttp' in n_l:
+            score += 500
+            # Дополнительные бонусы за настройки xHTTP
+            if 'mode=stream-up' in n_l or 'mode=auto' in n_l:
                 score += 100
+            if 'xpaddingbytes=' in n_l:
+                score += 50
         
-        # 4.1. ASN Ghost Logic (Проверка провайдера)
-        try:
-            host_ip = parsed.netloc.split('@')[-1].split(':')[0]
-            asn_name, _ = self._check_asn(host_ip)
-            if asn_name: score += 500
-        except: pass
+        if 'xudp' in n_l or ('type=udp' in n_l and 'congestion=' in n_l):
+            score += 500
+            # Бонус за congestion control
+            if 'congestion=bbr' in n_l or 'congestion=brutal' in n_l:
+                score += 100
+
+        if 'xtls-rprx-vision' in n_l: score += 150
+        if any(p in n_l for p in ['type=xhttp', 'mode=stream-up', 'tuic', 'hysteria2', 'hy2']): score += 250
+        if 'trojan' in n_l: score += 100
+        
+        port = parsed.netloc.split(':')[-1] if ':' in parsed.netloc else '443'
+        if port in ELITE_PORTS: score += 250
+        elif port == '443': score += 100
+
+        sni_match = re.search(r'sni=([^&?#\s]+)', n_l)
+        if sni_match:
+            sni = sni_match.group(1).strip('.')
+            if any(s in sni for s in BLACK_SNI): score -= 2000
+            if any(ts == sni or sni.endswith('.'+ts) for ts in TARGET_SNI): score += 300
         
         if any(h in parsed.netloc for h in CHAMPION_HOSTS): score += 50
-
-        # 5. Платные провайдеры
-        for _, patterns in PREMIUM_PROVIDER_PATTERNS.items():
-            if any(marker in n_l for marker in patterns):
-                score += 200
-
-        # 6. ALPN & FP
+        
+        # ========================================================================
+        # ДОБАВЛЕННЫЙ БЛОК ULTRA ELITE БОНУСОВ
+        # ========================================================================
+        
+        # ULTRA ELITE БОНУСЫ
+        sni = self._extract_sni(node)
+        
+        # 1. Ultra Elite SNI
+        if sni and any(elite_sni in sni for elite_sni in ULTRA_ELITE_SNI):
+            score += 300
+        
+        # 2. Особый бонус за itunes.apple.com
+        if sni and "itunes.apple.com" in sni:
+            score += 250
+        
+        # 3. Платные провайдеры
+        if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["iskra"]):
+            score += 200
+        
+        if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["tcp_reset"]):
+            score += 150
+        
+        if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["abvpn"]):
+            score += 180
+        
+        if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["vezdehod"]):
+            score += 130
+        
+        # 4. ALPN с декодированием
         alpn_value = self._extract_alpn_decoded(node)
         if alpn_value:
-            if 'h3' in alpn_value: score += 80
-            elif 'h2' in alpn_value: score += 40
-            
-        if 'fp=' in n_l: score += 50
-            
-        # 7. Частота UUID (отсеиваем паблик мусор)
+            if 'h3' in alpn_value or 'h3-29' in alpn_value:
+                score += 80 if not node.startswith('vmess://') else 40
+            elif 'h2' in alpn_value:
+                score += 40 if not node.startswith('vmess://') else 20
+        
+        # 5. UUID частота (используется в _update_statistics)
         uuid = self._extract_uuid(node)
         if uuid:
             uuid_count = self._get_uuid_frequency(uuid)
-            # Если 1 UUID на 50 серверах - это мусорный паблик
-            if uuid_count >= 50: score -= 100
-            elif uuid_count >= 3: score += 50 # Популярный, но в меру
-
+            if uuid_count >= 10:
+                score += 150
+            elif uuid_count >= 5:
+                score += 80
+            elif uuid_count >= 2:
+                score += 30
+        
+        # 6. Поддомены в SNI
+        if sni and (sni.count('.') >= 3 or any(sub in sni for sub in ['st.', 'api.', 'cdn.', 'disk.'])):
+            score += 100
+        
+        # 7. Не-chrome fingerprint
+        if any(fp in n_l for fp in ['fp=safari', 'fp=ios', 'fp=firefox', 'fp=edge']):
+            score += 80
+        
+        # КОНЕЦ ДОБАВЛЕНИЙ
         return max(score, 0)
 
     def patch(self, node):
-        """
-        ИСПРАВЛЕННЫЙ ПАТЧЕР (SAFE MODE)
-        - Не ломает VMess
-        - Не удаляет PBK/SID для Reality
-        - Не навязывает XUDP
-        """
-        try:
-            # --- VMESS: SKIP PATCHING ---
-            # Избегаем перекодирования Base64, чтобы не терять параметры json
-            if node.startswith('vmess://'):
-                return node
-            
-            # --- VLESS / TROJAN ---
-            if node.startswith(('vless://', 'trojan://')):
-                parsed = urlparse(node)
-                # keep_blank_values=True важен, чтобы не терять пустые параметры если они есть
-                query = parse_qs(parsed.query, keep_blank_values=True)
-                
-                changed = False
-                
-                # 1. Fingerprint (FP) - ставим рандомный, только если нет
-                if 'fp' not in query or not query['fp'][0]:
-                    query['fp'] = [self.get_fp(node)]
-                    changed = True
-                
-                # 2. ALPN - ставим дефолт, только если нет
-                if 'alpn' not in query or not query['alpn'][0]:
-                    query['alpn'] = ['h2,http/1.1']
-                    changed = True
-                
-                # 3. Type fix
-                if 'type' in query:
-                    net_type = query['type'][0]
-                    if net_type == 'ws' and 'path' not in query:
-                        query['path'] = ['/']
-                        changed = True
-                    if net_type == 'grpc' and 'serviceName' not in query:
-                        query['serviceName'] = ['grpc']
-                        changed = True
-
-                # 4. Reality Fixes (SID check)
-                if 'security' in query and query['security'][0] == 'reality':
-                    # Если есть pbk, но нет sid -> добавляем sid (иногда нужно для коннекта)
-                    if 'pbk' in query and 'sid' not in query:
-                        query['sid'] = ['1a']
-                        changed = True
-                    # ВАЖНО: Мы больше не удаляем и не перезаписываем параметры. 
-                    # PBK останется на месте, так как parse_qs его считал.
-
-                if changed:
-                    new_query = urlencode(query, doseq=True)
-                    return urlunparse(parsed._replace(query=new_query))
-            
-            return node
-        except: 
-            return node
-
-    def get_geo(self, node):
-        """Геолокация: ASN (Map) → IP (GeoLite) → Domain Rules"""
         try:
             parsed = urlparse(node)
-            if not parsed.netloc: return "UN"
+            query = parse_qs(parsed.query)
             
+            # ОБРАБОТКА VMESS
+            if node.startswith('vmess://'):
+                base_part = node[8:].split('?')[0]
+                
+                if not base_part or len(base_part) < 5:
+                    return node
+                
+                # 1. Проверяем UUID формат
+                uuid_match = re.match(r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}', base_part.lower())
+                if uuid_match:
+                    if query:
+                        new_query = urlencode(query, doseq=True)
+                        return urlunparse(parsed._replace(query=new_query))
+                    return node
+                
+                # 2. Проверяем формат UUID@host
+                uuid_host_match = re.match(r'^[a-f0-9-]+@[^@]+$', base_part.lower())
+                if uuid_host_match:
+                    if query:
+                        new_query = urlencode(query, doseq=True)
+                        return urlunparse(parsed._replace(query=new_query))
+                    return node
+                
+                # 3. Пытаемся декодировать как Base64
+                try:
+                    base_part_clean = base_part.strip()
+                    missing_padding = len(base_part_clean) % 4
+                    if missing_padding:
+                        base_part_clean += '=' * (4 - missing_padding)
+                    
+                    decoded = base64.b64decode(base_part_clean, validate=True)
+                    
+                    try:
+                        json_str = decoded.decode('utf-8')
+                    except UnicodeDecodeError:
+                        json_str = decoded.decode('latin-1')
+                    
+                    try:
+                        config = json.loads(json_str)
+                    except json.JSONDecodeError:
+                        return node
+                    
+                    # Исправляем некорректный type
+                    type_val = config.get('type', '')
+                    if type_val == '---':
+                        config['type'] = 'none'
+                    
+                    # Переносим параметры из query в JSON
+                    if query:
+                        if 'fp' in query and query['fp'][0]:
+                            config['fp'] = query['fp'][0]
+                        elif not config.get('fp'):
+                            config['fp'] = self.get_fp(node)
+                        
+                        # ИСПРАВЛЕННЫЙ БЛОК ALPN С ДЕКОДИРОВАНИЕМ
+                        if 'alpn' in query and query['alpn'][0]:
+                            alpn_value = query['alpn'][0]
+                            try:
+                                alpn_value = unquote(alpn_value)
+                            except:
+                                pass
+                            config['alpn'] = alpn_value
+                        elif not config.get('alpn'):
+                            config['alpn'] = 'h2,http/1.1'
+                        
+                        for key in ['sni', 'host', 'path', 'serviceName']:
+                            if key in query and query[key][0] and not config.get(key):
+                                config[key] = query[key][0]
+                    else:
+                        if not config.get('fp'):
+                            config['fp'] = self.get_fp(node)
+                        if not config.get('alpn'):
+                            config['alpn'] = 'h2,http/1.1'
+                    
+                    new_json = json.dumps(config, separators=(',', ':'))
+                    new_base64 = base64.b64encode(new_json.encode()).decode().rstrip('=')
+                    
+                    return f"vmess://{new_base64}"
+                    
+                except Exception:
+                    return node
+            
+            # ОБРАБОТКА VLESS/TROJAN
+            elif node.startswith(('vless', 'trojan')):
+                if not query.get('fp'):
+                    query['fp'] = [self.get_fp(node)]
+                if not query.get('alpn'):
+                    query['alpn'] = ['h2,http/1.1']
+                
+                net_type = query.get('type', [''])[0]
+                
+                # ДОБАВЛЕНО: Сохраняем параметры xHTTP
+                if net_type == 'xhttp':
+                    # Не трогаем специфичные параметры xhttp
+                    for xhttp_param in ['mode', 'xpaddingbytes', 'path', 'host']:
+                        if xhttp_param not in query and xhttp_param in parsed.query:
+                            # Оставляем как есть
+                            pass
+                
+                # ДОБАВЛЕНО: Сохраняем параметры xUDP
+                elif net_type == 'udp' or 'xudp' in node.lower():
+                    # Не трогаем параметры congestion и другие специфичные для UDP
+                    for udp_param in ['congestion', 'upMbps', 'downMbps']:
+                        if udp_param not in query and udp_param in parsed.query:
+                            # Оставляем как есть
+                            pass
+                
+                elif net_type == 'ws' and not query.get('path'):
+                    query['path'] = ['/graphql']
+                elif net_type == 'grpc' and not query.get('serviceName'):
+                    query['serviceName'] = ['grpc']
+                
+                new_query = urlencode(query, doseq=True)
+                return urlunparse(parsed._replace(query=new_query))
+            
+            return node
+            
+        except Exception:
+            return node
+            
+    def get_geo(self, node):
+        """Геолокация: IP → GeoLite2, домены → простые правила"""
+        try:
+            parsed = urlparse(node)
             host = parsed.netloc.split('@')[-1].split(':')[0]
-            if not host: return "UN"
             
-            # 1. Check ASN Map first (Свои диапазоны - самые точные для нас)
-            asn_name, asn_country = self._check_asn(host)
-            if asn_country == "RU":
-                self.geo_cache[host] = "RU"
-                return "RU"
-
-            # Cache check
-            if host in self.geo_cache: return self.geo_cache[host]
+            if not host:
+                return "UN"
+                
+            # Кэш
+            if host in self.geo_cache:
+                return self.geo_cache[host]
             
-            # 2. GeoLite2 (если это IP)
+            # 1. Если это IP - GeoLite2
             if re.match(r'^\d+\.\d+\.\d+\.\d+$', host):
                 if self.reader:
                     try:
@@ -433,63 +518,76 @@ class MetaAggregator:
                         country = result.country.iso_code or "UN"
                         self.geo_cache[host] = country
                         return country
-                    except: pass
+                    except:
+                        self.geo_cache[host] = "UN"
+                        return "UN"
             
-            # 3. Domain Rules (если это домен)
-            domain_lower = host.lower()
-            if domain_lower.endswith(('.ru', '.su', '.рф', '.yandex.net', '.mail.ru')):
+            # 2. Если домен - простые правила БЕЗ DNS
+            # Самые очевидные русские домены
+            if host.endswith(('.ru', '.su', '.рф')):
                 self.geo_cache[host] = "RU"
                 return "RU"
-            if domain_lower.endswith('.kz'): return "KZ"
-            if domain_lower.endswith('.by'): return "BY"
-            if domain_lower.endswith('.ua'): return "UA"
-            if domain_lower.endswith('.tr'): return "TR"
-            if domain_lower.endswith('.de'): return "DE"
-            if domain_lower.endswith('.us'): return "US"
+                
+            if host.endswith('.ua'):
+                self.geo_cache[host] = "UA"
+                return "UA"
+                
+            if host.endswith('.kz'):
+                self.geo_cache[host] = "KZ"
+                return "KZ"
+                
+            if host.endswith('.by'):
+                self.geo_cache[host] = "BY"
+                return "BY"
+                
+            if host.endswith('.tr'):
+                self.geo_cache[host] = "TR"
+                return "TR"
             
+            # 3. Популярные хосты которые знаем
+            RU_HOSTS = ['.yandex.', '.mail.', '.vk.', '.rutube.', 
+                       '.rambler.', '.sber.', '.tinkoff.']
+            
+            for ru_host in RU_HOSTS:
+                if ru_host in host:
+                    self.geo_cache[host] = "RU"
+                    return "RU"
+            
+            # 4. Не знаем - UN
             self.geo_cache[host] = "UN"
             return "UN"
-        except: return "UN"
-
-    def generate_server_name(self, geo, index, rep_count, score, node=""):
-        """Генерация имени"""
-        # Определяем качество
-        if score >= 1500: quality = "PLATINUM"
-        elif score >= 1000: quality = "ELITE"
-        elif score >= 500: quality = "PREMIUM"
-        elif score >= 300: quality = "STANDARD"
-        else: quality = "BASIC"
-        
-        # Определяем провайдера
-        provider = ""
-        try:
-            parsed = urlparse(node)
-            host = parsed.netloc.split('@')[-1].split(':')[0]
+                
+        except Exception:
+            return "UN"
             
-            # Проверка по ASN
-            asn_name, _ = self._check_asn(host)
-            if asn_name: 
-                provider = f"-{asn_name}"
-            else:
-                # Проверка по SNI
-                sni = self._extract_sni(node)
-                if sni:
-                    if 'max.ru' in sni: provider = "-VK-MAX"
-                    elif 'x5.ru' in sni: provider = "-X5-RETAIL"
-                    elif 'tbank' in sni: provider = "-T-BANK"
-                    elif 'google' in sni: provider = "-GGL"
-        except: pass
+    def generate_server_name(self, geo, index, rep_count, score, protocol=None):
+        """Генерирует имя для тега (после #)"""
         
-        flag = "🏳️"
-        if geo != "UN" and len(geo) == 2:
-            try: flag = "".join(chr(ord(c.upper()) + 127397) for c in geo)
-            except: pass
-        elif geo == "RU": flag = "🇷🇺"
+        if score >= 500:
+            quality = "ELITE"
+        elif score >= 300:
+            quality = "PREMIUM"
+        elif score >= 150:
+            quality = "STANDARD"
+        else:
+            quality = "BASIC"
         
-        # Формат более компактный, чтобы не резалось на мобилках
-        return f"{flag} {geo}{provider}-{index:04d} {quality}"
+        flag = "".join(chr(ord(c.upper()) + 127397) for c in geo) if geo != "UN" else "🌐"
+        
+        # ДОБАВЛЕНО: Метка протокола
+        protocol_tag = ""
+        if protocol == 'xHTTP':
+            protocol_tag = "[X-HTTP] "
+        elif protocol == 'xUDP':
+            protocol_tag = "[X-UDP] "
+        elif protocol == 'Hysteria2':
+            protocol_tag = "[HY2] "
+        elif protocol == 'TUIC':
+            protocol_tag = "[TUIC] "
+        
+        return f"{flag} {protocol_tag}{geo}-{index:05d}-REP({rep_count})-HPP {quality}"
 
-    def cleanup_reputation(self, max_age_days=30, max_entries=20000):
+    def cleanup_reputation(self, max_age_days=30, max_entries=10000):
         now = int(time.time())
         cutoff = now - (max_age_days * 86400)
         clean_db = {k: v for k, v in self.reputation.items() if v.get('last_seen', 0) > cutoff}
@@ -497,45 +595,26 @@ class MetaAggregator:
             sorted_rep = sorted(clean_db.items(), key=lambda x: x[1]['count'], reverse=True)
             clean_db = dict(sorted_rep[:max_entries])
         self.reputation = clean_db
-        # ============================================================================
-# 💾 ФУНКЦИИ СОХРАНЕНИЯ И MAIN
-# ============================================================================
 
 def save(file, data):
-    """Функция сохранения файлов + генерация Base64 версии"""
+    """Функция сохранения файлов"""
     if not data: 
         return
     try:
-        # Сохранение текстовой версии
-        content = "\n".join(data)
         with open(file, 'w', encoding='utf-8') as f: 
-            f.write(content)
-        
-        # Сохранение Base64 версии (для многих клиентов это важно)
-        b64_content = base64.b64encode(content.encode('utf-8')).decode('utf-8')
-        with open(file + ".b64", 'w', encoding='utf-8') as f:
-            f.write(b64_content)
-            
-        print(f"💾 {file} (+.b64): {len(data)} записей")
+            f.write("\n".join(data))
+        print(f"💾 {file}: {len(data)} записей")
     except Exception as e:
         print(f"❌ Ошибка сохранения {file}: {e}")
 
 def main():
-    # 1. Обновляем базы
-    update_geoip()
-    
     agg = MetaAggregator()
-    
-    # 2. Скачивание с заголовками
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
     
     def fetch(url):
         try: 
-            # Таймаут поменьше, чтобы не висело вечно
-            return requests.get(url, headers=headers, timeout=10).text
-        except Exception:
+            return requests.get(url, timeout=15).text
+        except Exception as e:
+            print(f"⚠️ Ошибка загрузки {url[:50]}...: {e}")
             return ""
     
     print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚡ Сбор источников...")
@@ -543,226 +622,288 @@ def main():
         results = list(ex.map(fetch, urls))
     
     raw_nodes = []
-    for content in results:
-        if not content: continue
-        
-        # Декодирование если источник полностью в Base64
-        # (Простая проверка: если нет :// в начале, скорее всего это b64)
+    for idx, content in enumerate(results):
+        if not content:
+            continue
+            
         if "://" not in content[:100]:
             try: 
                 content = base64.b64decode(content).decode('utf-8', errors='ignore')
-            except: pass
+            except: 
+                continue
         
-        # Разбиваем по строкам и чистим
-        nodes = [l.strip() for l in content.splitlines() if l and "://" in l and not l.startswith("//")]
+        nodes = [l.strip() for l in content.splitlines() if "://" in l and not l.startswith("//")]
         raw_nodes.extend(nodes)
+        print(f"  📥 Источник {idx+1}: {len(nodes)} нод")
 
-    print(f"📊 Всего сырых строк: {len(raw_nodes)}")
-
-    # 3. Первичная фильтрация и дедупликация
-    # Используем более точный ключ для дедупликации, чтобы не терять серверы на одном IP
+    print(f"📊 Всего собрано нод: {len(raw_nodes)}")
+    
     unique_map = {}
     ss_nodes = []
-    mobile_nodes = [] 
+    cable_nodes = []
+    mobile_nodes = []
     
     processed_count = 0
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 Обработка и дедупликация...")
-    
     for node in raw_nodes:
         processed_count += 1
-        if processed_count % 5000 == 0:
-            print(f"  ...обработано {processed_count} строк")
+        if processed_count % 1000 == 0:
+            print(f"  🔄 Обработано {processed_count}/{len(raw_nodes)} нод")
             
-        if any(trash in node for trash in ["127.0.0.1", "localhost"]):
+        if any(trash in node for trash in ["0.0.0.0", "127.0.0.1"]):
             continue
             
         try:
-            # Убираем имя (хвост после #), чтобы сравнивать чисто конфиги
             base_link = node.split('#')[0]
+            tag = node.split('#')[1] if '#' in node else ""
             
-            # --- SS HANDLING ---
             if base_link.startswith('ss://'):
-                # Исключаем VLESS замаскированные под SS (плагины)
-                if 'v2ray-plugin' in base_link or 'obfs-local' in base_link:
-                    pass 
-                elif 'vless' in base_link or 'uuid' in base_link:
-                    continue 
+                if len(base_link) < 10:
+                    continue
                 
-                if base_link not in ss_nodes:
-                    ss_nodes.append(node) # Сохраняем с именем если есть
+                if any(x in base_link.lower() for x in ['vless', 'reality', 'vnext', 'uuid']):
+                    continue
+                
+                if '@' not in base_link and ':' not in base_link[5:]:
+                    try:
+                        b64_part = base_link[5:].split('#')[0]
+                        if not re.match(r'^[A-Za-z0-9+/=]+$', b64_part):
+                            continue
+                    except:
+                        continue
+                
+                ss_nodes.append(node)
                 continue
             
-            # --- VLESS/VMESS/TROJAN HANDLING ---
-            # Парсим URL
-            try:
-                p = urlparse(base_link)
-                if not p.netloc: continue
-            except: continue
-
-            # Извлекаем параметры для уникального ключа
-            host = p.netloc.split('@')[-1].split(':')[0]
-            try: port = p.netloc.split(':')[-1]
-            except: port = '443'
+            p = urlparse(base_link)
+            ip_key = f"{p.scheme}@{p.netloc.split('@')[-1].split(':')[0]}"
+            score = agg.calculate_score(base_link)
             
-            uuid = agg._extract_uuid(base_link)
-            path = "root"
+            full_node_with_tag = f"{base_link}#{tag}" if tag else base_link
+            tag_lower = tag.lower()
+            if 'cable' in tag_lower:
+                cable_nodes.append(full_node_with_tag)
+            if 'mobile' in tag_lower:
+                mobile_nodes.append(full_node_with_tag)
             
-            # Если это WS/GRPC, путь тоже важен для уникальности
-            # (один сервер может раздавать разные конфиги по разным путям)
-            query = parse_qs(p.query)
-            if 'path' in query: path = query['path'][0]
-            elif 'serviceName' in query: path = query['serviceName'][0]
-            
-            # !!! ИСПРАВЛЕНИЕ "ИСЧЕЗАЮЩИХ" СЕРВЕРОВ !!!
-            # Ключ теперь включает PORT, UUID и PATH.
-            # Раньше был только host, поэтому 5 конфигов на одном IP схлопывались в 1.
-            uniq_key = f"{host}:{port}:{uuid}:{path}"
-            
-            # Мобильные подборки
-            sni = agg._extract_sni(base_link)
-            if sni and any(x in sni for x in ['mts', 'beeline', 'megafon', 't2.ru', 'yota', 'tele2']):
-                mobile_nodes.append(base_link)
-
-            # Сохраняем
-            if uniq_key not in unique_map:
-                unique_map[uniq_key] = base_link
-                
+            if ip_key not in unique_map or score > unique_map[ip_key]['score']:
+                unique_map[ip_key] = {
+                    'node': base_link, 
+                    'score': score, 
+                    'tag': tag,
+                    'full_with_tag': full_node_with_tag
+                }
         except: 
             continue
     
-    # Формируем список уникальных VLESS/VMESS нод
-    all_unique_vless = list(unique_map.values())
+    sorted_nodes = sorted(unique_map.values(), key=lambda x: x['score'], reverse=True)
+    all_unique = [v['node'] for v in sorted_nodes]
     
-    print(f"✅ Уникальных VLESS/VMESS/Trojan: {len(all_unique_vless)}")
-    print(f"✅ Уникальных SS: {len(ss_nodes)}")
+    print(f"✅ Уникальных нод после фильтрации: {len(all_unique)}")
+    print(f"✅ SS нод: {len(ss_nodes)}")
 
-    # 4. Обновляем статистику (UUID/SNI) для скоринга
-    agg._update_statistics(all_unique_vless)
+    # 1. Обновляем статистику
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Обновление статистики UUID/SNI...")
+    agg._update_statistics(all_unique)
     
-    # 5. Финальное обогащение
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💎 Финальный патчинг и ранжирование...")
-    
+    # 2. Обогащаем ноды данными
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Обогащение нод данными...")
     enriched_nodes = []
-    for node in all_unique_vless:
-        # Патчим (безопасно, см. класс MetaAggregator)
-        patched_node = agg.patch(node)
-        
-        # Считаем очки
-        final_score = agg.calculate_score(patched_node)
-        
-        # Определяем ГЕО
-        geo = agg.get_geo(patched_node)
-        
+    for i, node in enumerate(all_unique):
+        score = agg.calculate_score(node)  # пересчитываем с учётом статистики
+        geo = agg.get_geo(node)
+        protocol = agg._extract_protocol(node)  # ДОБАВЛЕНО: извлечение протокола
         enriched_nodes.append({
-            'node': patched_node,
-            'score': final_score,
-            'sni': agg._extract_sni(patched_node),
+            'node': node,
+            'score': score,
+            'sni': agg._extract_sni(node),
+            'uuid': agg._extract_uuid(node), 
             'geo': geo,
-            'raw': node # на всякий случай
+            'protocol': protocol  # ДОБАВЛЕНО
         }) 
     
-    # Сортировка: Сначала по очкам (убывание)
+    # 3. Сортируем
     enriched_nodes.sort(key=lambda x: x['score'], reverse=True)
     
-    # 6. Подготовка списков
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📝 Генерация имен и списков...")
+    vless_pool = [n['node'] for n in enriched_nodes if not n['node'].startswith('ss://')][:5000]
+    ss_pool = ss_nodes[:2000]
     
-    processed_final = []
+    processed_vless = []
     now_ts = int(time.time())
     
-    # Берем ТОП-20000 (или сколько нужно)
-    TOP_LIMIT = 20000 
-    
-    for i, item in enumerate(enriched_nodes[:TOP_LIMIT]):
-        node = item['node']
-        score = item['score']
-        geo = item['geo']
-        
-        # Обновляем счетчик репутации для следующего запуска
-        node_id = agg.get_node_id(node)
-        rep_entry = agg.reputation.get(node_id, {"count": 0, "last_seen": now_ts})
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 Обработка воронки ТОП-5000...")
+    for i, node in enumerate(vless_pool):
+        if i % 500 == 0:
+            print(f"  ⏳ Обработано {i}/{len(vless_pool)} VLESS нод")
+            
+        node_id_hash = agg.get_node_id(node)
+        rep_entry = agg.reputation.get(node_id_hash, {"count": 0, "last_seen": now_ts})
         rep_entry["count"] += 1
         rep_entry["last_seen"] = now_ts
-        agg.reputation[node_id] = rep_entry
+        agg.reputation[node_id_hash] = rep_entry
         
-        # Генерируем красивое имя
-        name = agg.generate_server_name(str(geo), i+1, rep_entry["count"], score, node)
+        geo = agg.get_geo(node)
+        patched = agg.patch(node)
+        score = agg.calculate_score(node)
+        protocol = agg._extract_protocol(node)  # ДОБАВЛЕНО: извлечение протокола
         
-        # Прикрепляем имя через решетку (стандартный формат)
-        full_link = f"{node}#{name}"
+        rep_val = rep_entry["count"]
+        geo_str = str(geo) if geo else "UN"
         
-        processed_final.append({
-            'link': full_link,
-            'score': score,
-            'sni': item['sni'],
-            'node_clean': node
-        })
+        name = agg.generate_server_name(geo_str, i+1, rep_val, score, protocol)  # ДОБАВЛЕНО: protocol
         
-    # 7. Категоризация
-    ultra_elite_list = []
-    business_list = []
-    leaked_gems_list = []
-    vless_vmess_list = []
+        processed_vless.append({'node': f"{patched}#{name}", 'geo': geo_str, 'score': score, 'raw': node})
     
-    for item in processed_final:
-        link = item['link']
-        score = item['score']
-        node_clean = item['node_clean']
-        sni = item['sni']
-        
-        vless_vmess_list.append(link)
-        
-        if score >= 1000:
-            ultra_elite_list.append(link)
-            business_list.append(link)
-        elif score >= 500:
-            business_list.append(link)
+    # 4. Функция определения ultra elite
+    def is_ultra_elite(node_data):
+        try:
+            node = node_data['node']
+            n_l = node.lower()
+            sni = node_data['sni']
+            score = node_data['score']
+            protocol = node_data.get('protocol')  # ДОБАВЛЕНО
             
-        # "Leaked Gems" - редкие протоколы или важные SNI
-        is_xhttp = 'type=xhttp' in node_clean
-        is_max = sni and 'max.ru' in sni
-        if is_xhttp or is_max:
-            leaked_gems_list.append(link)
+            ultra_score = 0
+            
+            # ДОБАВЛЕНО: Приоритет для xHTTP и xUDP
+            if protocol in ['xHTTP', 'xUDP']:
+                ultra_score += 4
+            
+            # Elite SNI
+            if sni and any(elite_sni in sni for elite_sni in ULTRA_ELITE_SNI):
+                ultra_score += 3
+            
+            # Платные провайдеры
+            for patterns in PREMIUM_PROVIDER_PATTERNS.values():
+                if any(pattern in n_l for pattern in patterns):
+                    ultra_score += 2
+            
+            # xHTTP
+            if 'type=xhttp' in n_l:
+                ultra_score += 2
+                if 'mode=auto' in n_l or 'mode=stream-up' in n_l:
+                    ultra_score += 1
+                if 'xpaddingbytes=' in n_l:
+                    ultra_score += 1
+            
+            # Качественные настройки
+            if 'flow=xtls-rprx-vision' in n_l:
+                ultra_score += 1
+            
+            if any(fp in n_l for fp in ['fp=safari', 'fp=ios', 'fp=firefox', 'fp=edge']):
+                ultra_score += 1
+            
+            # Элитные порты
+            if any(port in node for port in [f':{p}' for p in ELITE_PORTS]):
+                ultra_score += 2
+            
+            # UUID частота
+            uuid = node_data['uuid']
+            if uuid:
+                uuid_count = agg._get_uuid_frequency(uuid)
+                if uuid_count >= 10:
+                    ultra_score += 3
+                elif uuid_count >= 5:
+                    ultra_score += 2
+            
+            # Поддомены
+            if sni and (sni.count('.') >= 3 or any(sub in sni for sub in ['st.', 'api.', 'cdn.', 'disk.'])):
+                ultra_score += 1
+            
+            # Редкий SNI
+            if sni and agg._get_sni_frequency(sni) <= 5:
+                ultra_score += 2
+            
+            # Порог
+            if len(enriched_nodes) > 0:
+                top_30_threshold = enriched_nodes[int(len(enriched_nodes) * 0.3)]['score']
+            else:
+                top_30_threshold = 0
+            
+            return ultra_score >= 5 and score >= top_30_threshold
+        except:
+            return False
+    
+    # 5. Собираем ultra elite (С ТЕГАМИ КАК В business.txt)
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💎 Формирование ULTRA ELITE списка...")
+    ultra_elite_servers = []
+    
+    # Берем ТОЛЬКО уже обработанные ноды из processed_vless (они уже имеют теги с флагами)
+    elite_counter = 0
+    for processed in processed_vless:
+        if elite_counter >= 1000:
+            break
+        
+        # Находим эту ноду в enriched_nodes для проверки is_ultra_elite
+        node_data = None
+        for n in enriched_nodes:
+            if n['node'] == processed['raw']:
+                node_data = n
+                break
+        
+        if node_data and is_ultra_elite(node_data):
+            ultra_elite_servers.append(processed['node'])  # Уже содержит тег с флагом
+            elite_counter += 1
+        
+        # Прогресс
+        if elite_counter > 0 and elite_counter % 100 == 0:
+            print(f"    ⏳ Найдено {elite_counter} ULTRA ELITE серверов")
 
-    # 8. Сохранение
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Запись файлов...")
+    print(f"    ✅ Итог: {elite_counter} ULTRA ELITE серверов с тегами")
 
-    save("ultra_elite.txt", ultra_elite_list)
-    save("business.txt", business_list)
-    save("leaked_gems.txt", leaked_gems_list)
-    save("ss.txt", ss_nodes) # Сохраняем все SS
+    # 6. Сохраняем ultra elite
+    with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
+        f.write("\n".join(ultra_elite_servers))
+    print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} ULTRA ELITE серверов")
+    
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Подготовка ultra elite...")
+    
+    # Сохранение остальных файлов
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение файлов...")
+
+    save("hard_hidden.txt", [n['node'] for n in processed_vless[:1000] if n['score'] >= 500])
+    save("mob.txt", [n['node'] for n in processed_vless if n['score'] >= 300][:1000])
+    save("med.txt", [n['node'] for n in processed_vless if 150 <= n['score'] < 450][:2000])
+    save("vls.txt", [n['node'] for n in processed_vless])
+
+    filtered_ss = []
+    for ss_node in ss_pool:
+        try:
+            base_link = ss_node.split('#')[0]
+            if agg.get_geo(base_link) != "RU":
+                filtered_ss.append(ss_node)
+        except:
+            continue
+
+    save("ss.txt", filtered_ss[:2000])
+    save("all.txt", all_unique[:25000])
+
+    save("whitelist_cable.txt", cable_nodes)
     save("whitelist_mobile.txt", mobile_nodes)
-    save("vless_vmess.txt", vless_vmess_list)
-    
-    # ALL: VLESS + SS
-    all_content = vless_vmess_list + ss_nodes
-    # Перемешивать не будем, пусть VLESS (отсортированные) идут первыми
-    save("all.txt", all_content)
-    
-    # Legacy Support (для совместимости со старыми ссылками)
+
     try:
-        shutil.copy("business.txt", "hard_hidden.txt")
+        shutil.copy("hard_hidden.txt", "business.txt")
+        shutil.copy("vls.txt", "vless_vmess.txt")
         shutil.copy("all.txt", "sub.txt")
         shutil.copy("all.txt", "all_configs.txt")
-    except: pass
-
-    # 9. Сохранение базы репутации
-    agg.cleanup_reputation()
-    try:
-        with open(agg.rep_path, 'w', encoding='utf-8') as f:
-            json.dump(agg.reputation, f, indent=2)
-        print("✅ База репутации обновлена")
+        print("✅ Созданы дополнительные копии файлов")
     except Exception as e:
-        print(f"❌ Ошибка записи репутации: {e}")
+        print(f"⚠️ Ошибка копирования файлов: {e}")
+
+    agg.cleanup_reputation()
+    with open(agg.rep_path, 'w', encoding='utf-8') as f:
+        json.dump(agg.reputation, f, indent=2)
+    print("✅ Обновлена репутация серверов")
 
     if agg.reader:
         agg.reader.close()
 
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Готово.")
-    print(f"📊 ИТОГИ:")
-    print(f"  - 💎 Ultra Elite: {len(ultra_elite_list)}")
-    print(f"  - 💼 Business: {len(business_list)}")
-    print(f"  - 🌐 Total (All): {len(all_content)}")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Скрипт успешно завершен.")
+    print(f"📊 Итоги:")
+    print(f"  - Всего нод: {len(raw_nodes)}")
+    print(f"  - Уникальных: {len(all_unique)}")
+    print(f"  - ULTRA ELITE: {len(ultra_elite_servers)}")
+    print(f"  - Обработано VLESS: {len(processed_vless)}")
+    print(f"  - SS нод: {len(filtered_ss)}")
 
 if __name__ == "__main__":
-    main() 
+    main()
