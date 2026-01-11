@@ -98,6 +98,16 @@ urls = [
     "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
     "https://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt",
     "https://etoneya.a9fm.site/1",
+    "https://raw.githubusercontent.com/V2RAYCONFIGSPOOL/V2RAY_SUB/refs/heads/main/v2ray_configs_no1.txt", 
+    "https://raw.githubusercontent.com/V2RAYCONFIGSPOOL/V2RAY_SUB/refs/heads/main/v2ray_configs_no2.txt", 
+    "https://bp.wl.free.nf/confs/wl.txt",
+    "https://bp.wl.free.nf/confs/selected.txt",
+    "https://bp.wl.free.nf/confs/merged.txt",
+    "https://raw.githubusercontent.com/FLEXIY0/matryoshka-vpn/main/configs/russia_whitelist.txt" 
+    "https://storage.yandexcloud.net/nllrcn-proxy-subs/subs/main-sub.txt", 
+    "https://raw.githubusercontent.com/HikaruApps/WhiteLattice/refs/heads/main/subscriptions/main-sub.txt", 
+    "https://storage.yandexcloud.net/cid-vpn/whitelist.txt", 
+    "http://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt", 
     "https://raw.githubusercontent.com/vsevjik/OBSpiskov/refs/heads/main/wwh#OBSpiskov",
     "https://raw.githubusercontent.com/55prosek-lgtm/vpn_config_for_russia/refs/heads/main/blacklist.txt", 
     "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt", 
@@ -907,3 +917,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
