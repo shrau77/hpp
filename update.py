@@ -1,10 +1,58 @@
-import requests, base64, re, os, socket, geoip2.database, json, hashlib, shutil, time
+import asyncio
+import aiohttp
+import base64
+import re
+import os
+import json
+import hashlib
+import time
 from datetime import datetime
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, unquote
-from concurrent.futures import ThreadPoolExecutor
+from typing import List, Dict, Set, Optional, Tuple
+import socket
 
-# --- НАСТРОЙКИ ---
-TARGET_SNI = list(set([
+# ============================================================================
+# КОНФИГУРАЦИЯ
+# ============================================================================
+
+# ASN Blacklist - забаненные хостинги
+ASN_BLACKLIST = {
+    'hetzner', 'digitalocean', 'ovh', 'linode', 'vultr', 
+    'contabo', 'amazon', 'google', 'microsoft', 'cloudflare'
+}
+
+# Разрешенные протоколы
+ALLOWED_PROTOCOLS = {'vless', 'hysteria2', 'hy2', 'tuic', 'ss'}
+
+# Современные методы Shadowsocks
+MODERN_SS_METHODS = {
+    '2022-blake3-aes-128-gcm',
+    '2022-blake3-aes-256-gcm', 
+    '2022-blake3-chacha20-poly1305',
+    'aes-256-gcm',
+    'chacha20-ietf-poly1305'
+}
+
+# User-Agent для ротации
+USER_AGENTS = [
+    'Happ/3.7.0',
+    'Happ/3.8.1'
+]
+
+# Элитные SNI (сохраняем из оригинала)
+ULTRA_ELITE_SNI = [
+    "hls-svod.itunes.apple.com", "itunes.apple.com",
+    "fastsync.xyz", "cloudlane.xyz", "powodzenia.xyz", 
+    "shiftline.xyz", "edgeport.xyz",
+    "stats.vk-portal.net", "akashi.vk-portal.net",
+    "deepl.com", "www.samsung.com", "cdnjs.cloudflare.com",
+    "st.ozone.ru", "disk.yandex.ru", "api.mindbox.ru",
+    "travel.yandex.ru", "egress.yandex.net", "sba.yandex.net",
+    "strm.yandex.net", "goya.rutube.ru",
+]
+
+# Целевые SNI для российских пользователей
+TARGET_SNI = [
     "www.unicreditbank.ru", "www.gazprombank.ru", "cdn.gpb.ru", "mkb.ru", "www.open.ru",
     "cobrowsing.tbank.ru", "cdn.rosbank.ru", "www.psbank.ru", "www.raiffeisen.ru",
     "www.rzd.ru", "st.gismeteo.st", "stat-api.gismeteo.net", "c.dns-shop.ru",
@@ -42,47 +90,24 @@ TARGET_SNI = list(set([
     "jsons.injector.3ebra.net", "2gis.ru", "d-assets.2gis.ru", "s1.bss.2gis.com",
     "www.tbank.ru", "strm-spbmiran-08.strm.yandex.net", "id.tbank.ru", "tmsg.tbank.ru",
     "vk.com", "www.wildberries.ru", "www.ozon.ru", "ok.ru", "yandex.ru"
-]))
-
-BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn']
-ELITE_PORTS = ['2053', '2083', '2087', '2096']
-CHAMPION_HOSTS = ['yandex', 'selectel', 'timeweb', 'firstbyte', 'gcore', 'vkcloud', 'mail.ru']
-
-# ============================================================================
-# ULTRA ELITE КОНСТАНТЫ
-# ============================================================================
-
-# УЛЬТРА-ЭЛИТНЫЕ SNI (из анализа платных серверов)
-ULTRA_ELITE_SNI = [
-    # Апловский CDN
-    "hls-svod.itunes.apple.com", "itunes.apple.com",
-    # Кастомные домены платных
-    "fastsync.xyz", "cloudlane.xyz", "powodzenia.xyz", 
-    "shiftline.xyz", "edgeport.xyz",
-    # Редкие поддомены ВК
-    "stats.vk-portal.net", "akashi.vk-portal.net",
-    # Иностранные ресурсы
-    "deepl.com", "www.samsung.com", "cdnjs.cloudflare.com",
-    # Наши старые элитные
-    "st.ozone.ru", "disk.yandex.ru", "api.mindbox.ru",
-    # Дополнительные редкие
-    "travel.yandex.ru", "egress.yandex.net", "sba.yandex.net",
-    "strm.yandex.net", "goya.rutube.ru",
 ]
 
-# Паттерны платных провайдеров
-PREMIUM_PROVIDER_PATTERNS = {
-    "iskra": ['connect-iskra.ru', 'iskra-connect.xyz', 'fp=qq', 'xpaddingbytes='],
-    "tcp_reset": ['tcp-reset-club.net', 'tcp-reset-club'],
-    "abvpn": ['tcpnet.fun', 'tcpdoor.net', 'abvpn.ru', 'fp=firefox'],
-    "vezdehod": ['blh', 'rblx', 'gmn']
-}
+# Черный список SNI
+BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn']
 
-# Элитные порты (расширяем существующие)
-ELITE_PORTS = ['2053', '2083', '2087', '2096', '8447', '9443', '10443'] + ELITE_PORTS
-ELITE_PORTS = list(set(ELITE_PORTS))  # Убираем дубли
+# Элитные порты
+ELITE_PORTS = {'2053', '2083', '2087', '2096', '8447', '9443', '10443', '443'}
 
-urls = [
+# Таймауты
+TCP_CONNECT_TIMEOUT = 1.5
+HTTP_TIMEOUT = 15
+
+# Лимиты
+MAX_NODES_TO_CHECK = 5000
+MAX_CONCURRENT_CHECKS = 200
+
+# Источники конфигураций
+SOURCES = [
     "https://s3c3.001.gpucloud.ru/dggdu/xixz",
     "https://raw.githubusercontent.com/HikaruApps/WhiteLattice/refs/heads/main/subscriptions/config.txt", 
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
@@ -132,100 +157,197 @@ urls = [
     *[f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" for i in range(1, 27)]
 ]
 
-class MetaAggregator:
-    def __init__(self):
-        self.rep_path = 'reputation.json'
-        self.reputation = self._load_json(self.rep_path)
-        self.geo_cache = {}
-        self.reader = geoip2.database.Reader('GeoLite2-Country.mmdb') if os.path.exists('GeoLite2-Country.mmdb') else None
-        self.server_counter = {}
-        
-        # ДОБАВЛЕНО: новые счетчики для ULTRA ELITE
-        self.uuid_counter = {}
-        self.sni_counter = {}
-    
-    def _load_json(self, path):
-        if os.path.exists(path):
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    for k, v in data.items():
-                        if isinstance(v, int): data[k] = {"count": v, "last_seen": int(time.time())}
-                    return data
-            except: return {}
-        return {}
+# Добавляем источники из диапазона
+SOURCES.extend([
+    f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" 
+    for i in range(1, 27)
+])
 
-    # ДОБАВЛЕННЫЕ МЕТОДЫ ДЛЯ ULTRA ELITE
-    def _extract_alpn_decoded(self, node):
-        """Извлекает и декодирует ALPN для любого протокола"""
+# ============================================================================
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# ============================================================================
+
+def get_node_hash(node: str) -> str:
+    """Генерирует хеш для ноды (без тега)"""
+    base_link = node.split('#')[0]
+    return hashlib.md5(base_link.encode()).hexdigest()
+
+def extract_protocol(node: str) -> Optional[str]:
+    """Извлекает протокол из ноды"""
+    if node.startswith('ss://'):
+        return 'ss'
+    elif node.startswith('vless://'):
+        return 'vless'
+    elif node.startswith('trojan://'):
+        return 'trojan'
+    elif 'hysteria2' in node.lower() or 'hy2' in node.lower():
+        return 'hysteria2'
+    elif 'tuic' in node.lower():
+        return 'tuic'
+    return None
+
+def extract_sni(node: str) -> Optional[str]:
+    """Извлекает SNI из ноды"""
+    try:
+        match = re.search(r'[?&]sni=([^&?#\s]+)', node.lower())
+        if match:
+            return match.group(1).strip('.')
+    except:
+        pass
+    return None
+
+def extract_host_port(node: str) -> Optional[Tuple[str, int]]:
+    """Извлекает хост и порт из ноды"""
+    try:
+        parsed = urlparse(node)
+        netloc = parsed.netloc.split('@')[-1]  # Убираем user info
+        
+        if ':' in netloc:
+            host, port = netloc.rsplit(':', 1)
+            return (host, int(port))
+        else:
+            return (netloc, 443)  # Дефолтный порт
+    except:
+        return None
+
+def is_blacklisted_host(host: str) -> bool:
+    """Проверяет, находится ли хост в черном списке ASN"""
+    host_lower = host.lower()
+    return any(asn in host_lower for asn in ASN_BLACKLIST)
+
+def validate_ss_method(node: str) -> bool:
+    """Проверяет, использует ли Shadowsocks современный метод"""
+    try:
+        # Попытка извлечь метод из base64
+        base_part = node[5:].split('#')[0].split('@')[0]
+        
         try:
-            patterns = [
-                r'alpn=([^&?\s]+)',
-                r'"alpn":"([^"]+)"',
-                r"'alpn':'([^']+)'",
-            ]
-            
-            for pattern in patterns:
-                match = re.search(pattern, node, re.IGNORECASE)
-                if match:
-                    alpn_value = match.group(1)
-                    try:
-                        alpn_value = unquote(alpn_value)
-                    except:
-                        pass
-                    alpn_value = alpn_value.replace('\\"', '"').replace("\\'", "'")
-                    return alpn_value
-            return None
+            decoded = base64.b64decode(base_part + '=' * (4 - len(base_part) % 4)).decode('utf-8', errors='ignore')
+            method = decoded.split(':')[0]
+            return method in MODERN_SS_METHODS
         except:
-            return None
+            # Если не получилось декодировать, проверяем по строке
+            return any(method in node.lower() for method in MODERN_SS_METHODS)
+    except:
+        return False
+
+def is_ip_address(host: str) -> bool:
+    """Проверяет, является ли строка IP-адресом"""
+    return bool(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host))
+
+# ============================================================================
+# КЛАСС REPUTATION MANAGER
+# ============================================================================
+
+class ReputationManager:
+    """Управление репутацией серверов"""
     
-    def _get_uuid_frequency(self, uuid):
-        return self.uuid_counter.get(uuid, 0)
+    def __init__(self, reputation_file: str = 'reputation.json'):
+        self.reputation_file = reputation_file
+        self.reputation: Dict[str, Dict] = self._load()
+        
+    def _load(self) -> Dict:
+        """Загружает репутацию из файла"""
+        if os.path.exists(self.reputation_file):
+            try:
+                with open(self.reputation_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    # Миграция старого формата
+                    for k, v in data.items():
+                        if isinstance(v, int):
+                            data[k] = {"count": v, "last_seen": int(time.time())}
+                    return data
+            except:
+                return {}
+        return {}
     
-    def _get_sni_frequency(self, sni):
-        return self.sni_counter.get(sni, 0)
-    
-    def _update_statistics(self, nodes):
-        """Обновляем статистику UUID и SNI"""
+    def save(self):
+        """Сохраняет репутацию в файл"""
         try:
-            self.uuid_counter.clear()
-            self.sni_counter.clear()
-            
-            for node in nodes:
-                try:
-                    uuid = self._extract_uuid(node)
-                    if uuid:
-                        self.uuid_counter[uuid] = self.uuid_counter.get(uuid, 0) + 1
-                    
-                    sni = self._extract_sni(node)
-                    if sni:
-                        self.sni_counter[sni] = self.sni_counter.get(sni, 0) + 1
-                except:
-                    continue
-        except:
-            pass
+            with open(self.reputation_file, 'w', encoding='utf-8') as f:
+                json.dump(self.reputation, f, indent=2)
+        except Exception as e:
+            print(f"❌ Ошибка сохранения репутации: {e}")
     
-    # ДОБАВЛЕНО: метод извлечения UUID
-    def _extract_uuid(self, node):
+    def update(self, node_hash: str):
+        """Обновляет репутацию ноды"""
+        now = int(time.time())
+        if node_hash not in self.reputation:
+            self.reputation[node_hash] = {"count": 0, "last_seen": now}
+        
+        self.reputation[node_hash]["count"] += 1
+        self.reputation[node_hash]["last_seen"] = now
+    
+    def get_count(self, node_hash: str) -> int:
+        """Возвращает счетчик репутации"""
+        return self.reputation.get(node_hash, {}).get("count", 0)
+    
+    def cleanup(self, max_age_days: int = 30, max_entries: int = 10000):
+        """Очищает старые записи репутации"""
+        now = int(time.time())
+        cutoff = now - (max_age_days * 86400)
+        
+        # Удаляем старые записи
+        clean_db = {
+            k: v for k, v in self.reputation.items() 
+            if v.get('last_seen', 0) > cutoff
+        }
+        
+        # Ограничиваем размер
+        if len(clean_db) > max_entries:
+            sorted_rep = sorted(
+                clean_db.items(), 
+                key=lambda x: x[1]['count'], 
+                reverse=True
+            )
+            clean_db = dict(sorted_rep[:max_entries])
+        
+        self.reputation = clean_db
+    
+    def clear(self):
+        """Полная очистка репутации"""
+        self.reputation = {}
+        if os.path.exists(self.reputation_file):
+            os.remove(self.reputation_file)
+        print("✅ Репутация полностью очищена")
+class NodeScorer:
+    """Система оценки качества нод"""
+    
+    def __init__(self, reputation_manager: 'ReputationManager'):
+        self.reputation = reputation_manager
+        self.uuid_counter: Dict[str, int] = {}
+        self.sni_counter: Dict[str, int] = {}
+    
+    def update_statistics(self, nodes: List[str]):
+        """Обновляет статистику UUID и SNI"""
+        self.uuid_counter.clear()
+        self.sni_counter.clear()
+        
+        for node in nodes:
+            try:
+                uuid = self._extract_uuid(node)
+                if uuid:
+                    self.uuid_counter[uuid] = self.uuid_counter.get(uuid, 0) + 1
+                
+                sni = extract_sni(node)
+                if sni:
+                    self.sni_counter[sni] = self.sni_counter.get(sni, 0) + 1
+            except:
+                continue
+    
+    def _extract_uuid(self, node: str) -> Optional[str]:
         """Извлекает UUID из ноды"""
         try:
             if node.startswith('vmess://'):
-                # Пробуем извлечь из Base64
-                base_part = node[8:].split('?')[0]
-                try:
-                    missing_padding = len(base_part) % 4
-                    if missing_padding:
-                        base_part += '=' * (4 - missing_padding)
-                    decoded = base64.b64decode(base_part).decode('utf-8')
-                    json_data = json.loads(decoded)
-                    return json_data.get('id')
-                except:
-                    # Пробуем найти UUID в строке
-                    uuid_match = re.search(r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', node, re.IGNORECASE)
-                    if uuid_match:
-                        return uuid_match.group(0)
+                uuid_match = re.search(
+                    r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', 
+                    node, 
+                    re.IGNORECASE
+                )
+                if uuid_match:
+                    return uuid_match.group(0)
+            
             elif node.startswith(('vless://', 'trojan://')):
-                # Извлекаем из URL
                 parsed = urlparse(node)
                 user_info = parsed.netloc.split('@')[0]
                 if user_info and '@' in parsed.netloc:
@@ -234,692 +356,646 @@ class MetaAggregator:
             pass
         return None
     
-    # ДОБАВЛЕНО: метод извлечения SNI
-    def _extract_sni(self, node):
-        """Извлекает SNI из ноды"""
-        try:
-            match = re.search(r'sni=([^&?#\s]+)', node.lower())
-            if match:
-                return match.group(1).strip('.')
-        except:
-            pass
-        return None
-
-    # ДОБАВЛЕНО: метод извлечения протокола
-    def _extract_protocol(self, node):
-        """Извлекает тип протокола из ноды"""
-        try:
-            n_l = node.lower()
-            
-            # xHTTP проверка
-            if 'type=xhttp' in n_l:
-                return 'xHTTP'
-            
-            # xUDP проверка (может быть упомянут как xudp или в параметре congestion)
-            if 'xudp' in n_l or ('type=udp' in n_l and 'congestion=' in n_l):
-                return 'xUDP'
-            
-            # Другие протоколы
-            if node.startswith('vmess://'):
-                return 'VMess'
-            elif node.startswith('vless://'):
-                if 'xtls-rprx-vision' in n_l:
-                    return 'VLESS-Vision'
-                return 'VLESS'
-            elif node.startswith('trojan://'):
-                return 'Trojan'
-            elif 'hysteria2' in n_l or 'hy2' in n_l:
-                return 'Hysteria2'
-            elif 'tuic' in n_l:
-                return 'TUIC'
-            
-            return None
-        except:
-            return None
-
-    def get_node_id(self, node):
-        return hashlib.md5(node.split('#')[0].encode()).hexdigest()
-
-    def get_fp(self, node):
-        hash_val = int(self.get_node_id(node), 16)
-        choice = hash_val % 100
-        if choice < 65: return "chrome"
-        if choice < 85: return "edge"
-        if choice < 95: return "safari"
-        return "ios"
-
-    def calculate_score(self, node):
+    def calculate_score(self, node: str) -> int:
+        """Вычисляет оценку ноды"""
         score = 0
         n_l = node.lower()
-        parsed = urlparse(node)
         
-        node_id = self.get_node_id(node)
-        rep_data = self.reputation.get(node_id, {})
-        score += rep_data.get('count', 0) * 50
-
-        # ДОБАВЛЕНО: Приоритетные протоколы 2026 года
-        if 'type=xhttp' in n_l:
-            score += 500
-            # Дополнительные бонусы за настройки xHTTP
-            if 'mode=stream-up' in n_l or 'mode=auto' in n_l:
-                score += 100
-            if 'xpaddingbytes=' in n_l:
-                score += 50
+        # Базовая репутация
+        node_hash = get_node_hash(node)
+        rep_count = self.reputation.get_count(node_hash)
+        score += rep_count * 50
         
-        if 'xudp' in n_l or ('type=udp' in n_l and 'congestion=' in n_l):
-            score += 500
-            # Бонус за congestion control
-            if 'congestion=bbr' in n_l or 'congestion=brutal' in n_l:
-                score += 100
-
-        if 'xtls-rprx-vision' in n_l: score += 150
-        if any(p in n_l for p in ['type=xhttp', 'mode=stream-up', 'tuic', 'hysteria2', 'hy2']): score += 250
-        if 'trojan' in n_l: score += 100
+        # Протокол
+        protocol = extract_protocol(node)
         
-        port = parsed.netloc.split(':')[-1] if ':' in parsed.netloc else '443'
-        if port in ELITE_PORTS: score += 250
-        elif port == '443': score += 100
-
-        sni_match = re.search(r'sni=([^&?#\s]+)', n_l)
-        if sni_match:
-            sni = sni_match.group(1).strip('.')
-            if any(s in sni for s in BLACK_SNI): score -= 2000
-            if any(ts == sni or sni.endswith('.'+ts) for ts in TARGET_SNI): score += 300
+        # Hysteria2 - высший приоритет
+        if protocol == 'hysteria2':
+            score += 600
         
-        if any(h in parsed.netloc for h in CHAMPION_HOSTS): score += 50
-        
-        # ========================================================================
-        # ДОБАВЛЕННЫЙ БЛОК ULTRA ELITE БОНУСОВ
-        # ========================================================================
-        
-        # ULTRA ELITE БОНУСЫ
-        sni = self._extract_sni(node)
-        
-        # 1. Ultra Elite SNI
-        if sni and any(elite_sni in sni for elite_sni in ULTRA_ELITE_SNI):
-            score += 300
-        
-        # 2. Особый бонус за itunes.apple.com
-        if sni and "itunes.apple.com" in sni:
-            score += 250
-        
-        # 3. Платные провайдеры
-        if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["iskra"]):
-            score += 200
-        
-        if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["tcp_reset"]):
-            score += 150
-        
-        if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["abvpn"]):
-            score += 180
-        
-        if any(marker in n_l for marker in PREMIUM_PROVIDER_PATTERNS["vezdehod"]):
-            score += 130
-        
-        # 4. ALPN с декодированием
-        alpn_value = self._extract_alpn_decoded(node)
-        if alpn_value:
-            if 'h3' in alpn_value or 'h3-29' in alpn_value:
-                score += 80 if not node.startswith('vmess://') else 40
-            elif 'h2' in alpn_value:
-                score += 40 if not node.startswith('vmess://') else 20
-        
-        # 5. UUID частота (используется в _update_statistics)
-        uuid = self._extract_uuid(node)
-        if uuid:
-            uuid_count = self._get_uuid_frequency(uuid)
-            if uuid_count >= 10:
-                score += 150
-            elif uuid_count >= 5:
-                score += 80
-            elif uuid_count >= 2:
-                score += 30
-        
-        # 6. Поддомены в SNI
-        if sni and (sni.count('.') >= 3 or any(sub in sni for sub in ['st.', 'api.', 'cdn.', 'disk.'])):
-            score += 100
-        
-        # 7. Не-chrome fingerprint
-        if any(fp in n_l for fp in ['fp=safari', 'fp=ios', 'fp=firefox', 'fp=edge']):
-            score += 80
-        
-        # КОНЕЦ ДОБАВЛЕНИЙ
-        return max(score, 0)
-
-    def patch(self, node):
-        try:
-            parsed = urlparse(node)
-            query = parse_qs(parsed.query)
-            
-            # ОБРАБОТКА VMESS
-            if node.startswith('vmess://'):
-                base_part = node[8:].split('?')[0]
-                
-                if not base_part or len(base_part) < 5:
-                    return node
-                
-                # 1. Проверяем UUID формат
-                uuid_match = re.match(r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}', base_part.lower())
-                if uuid_match:
-                    if query:
-                        new_query = urlencode(query, doseq=True)
-                        return urlunparse(parsed._replace(query=new_query))
-                    return node
-                
-                # 2. Проверяем формат UUID@host
-                uuid_host_match = re.match(r'^[a-f0-9-]+@[^@]+$', base_part.lower())
-                if uuid_host_match:
-                    if query:
-                        new_query = urlencode(query, doseq=True)
-                        return urlunparse(parsed._replace(query=new_query))
-                    return node
-                
-                # 3. Пытаемся декодировать как Base64
-                try:
-                    base_part_clean = base_part.strip()
-                    missing_padding = len(base_part_clean) % 4
-                    if missing_padding:
-                        base_part_clean += '=' * (4 - missing_padding)
-                    
-                    decoded = base64.b64decode(base_part_clean, validate=True)
-                    
-                    try:
-                        json_str = decoded.decode('utf-8')
-                    except UnicodeDecodeError:
-                        json_str = decoded.decode('latin-1')
-                    
-                    try:
-                        config = json.loads(json_str)
-                    except json.JSONDecodeError:
-                        return node
-                    
-                    # Исправляем некорректный type
-                    type_val = config.get('type', '')
-                    if type_val == '---':
-                        config['type'] = 'none'
-                    
-                    # Переносим параметры из query в JSON
-                    if query:
-                        if 'fp' in query and query['fp'][0]:
-                            config['fp'] = query['fp'][0]
-                        elif not config.get('fp'):
-                            config['fp'] = self.get_fp(node)
-                        
-                        # ИСПРАВЛЕННЫЙ БЛОК ALPN С ДЕКОДИРОВАНИЕМ
-                        if 'alpn' in query and query['alpn'][0]:
-                            alpn_value = query['alpn'][0]
-                            try:
-                                alpn_value = unquote(alpn_value)
-                            except:
-                                pass
-                            config['alpn'] = alpn_value
-                        elif not config.get('alpn'):
-                            config['alpn'] = 'h2,http/1.1'
-                        
-                        for key in ['sni', 'host', 'path', 'serviceName']:
-                            if key in query and query[key][0] and not config.get(key):
-                                config[key] = query[key][0]
-                    else:
-                        if not config.get('fp'):
-                            config['fp'] = self.get_fp(node)
-                        if not config.get('alpn'):
-                            config['alpn'] = 'h2,http/1.1'
-                    
-                    new_json = json.dumps(config, separators=(',', ':'))
-                    new_base64 = base64.b64encode(new_json.encode()).decode().rstrip('=')
-                    
-                    return f"vmess://{new_base64}"
-                    
-                except Exception:
-                    return node
-            
-            # ОБРАБОТКА VLESS/TROJAN
-            elif node.startswith(('vless', 'trojan')):
-                if not query.get('fp'):
-                    query['fp'] = [self.get_fp(node)]
-                if not query.get('alpn'):
-                    query['alpn'] = ['h2,http/1.1']
-                
-                net_type = query.get('type', [''])[0]
-                
-                # ДОБАВЛЕНО: Сохраняем параметры xHTTP
-                if net_type == 'xhttp':
-                    # Не трогаем специфичные параметры xhttp
-                    for xhttp_param in ['mode', 'xpaddingbytes', 'path', 'host']:
-                        if xhttp_param not in query and xhttp_param in parsed.query:
-                            # Оставляем как есть
-                            pass
-                
-                # ДОБАВЛЕНО: Сохраняем параметры xUDP
-                elif net_type == 'udp' or 'xudp' in node.lower():
-                    # Не трогаем параметры congestion и другие специфичные для UDP
-                    for udp_param in ['congestion', 'upMbps', 'downMbps']:
-                        if udp_param not in query and udp_param in parsed.query:
-                            # Оставляем как есть
-                            pass
-                
-                elif net_type == 'ws' and not query.get('path'):
-                    query['path'] = ['/graphql']
-                elif net_type == 'grpc' and not query.get('serviceName'):
-                    query['serviceName'] = ['grpc']
-                
-                new_query = urlencode(query, doseq=True)
-                return urlunparse(parsed._replace(query=new_query))
-            
-            return node
-            
-        except Exception:
-            return node
-            
-    def get_geo(self, node):
-        """Геолокация: IP → GeoLite2, домены → простые правила"""
-        try:
-            parsed = urlparse(node)
-            host = parsed.netloc.split('@')[-1].split(':')[0]
-            
-            if not host:
-                return "UN"
-                
-            # Кэш
-            if host in self.geo_cache:
-                return self.geo_cache[host]
-            
-            # 1. Если это IP - GeoLite2
-            if re.match(r'^\d+\.\d+\.\d+\.\d+$', host):
-                if self.reader:
-                    try:
-                        result = self.reader.country(host)
-                        country = result.country.iso_code or "UN"
-                        self.geo_cache[host] = country
-                        return country
-                    except:
-                        self.geo_cache[host] = "UN"
-                        return "UN"
-            
-            # 2. Если домен - простые правила БЕЗ DNS
-            # Самые очевидные русские домены
-            if host.endswith(('.ru', '.su', '.рф')):
-                self.geo_cache[host] = "RU"
-                return "RU"
-                
-            if host.endswith('.ua'):
-                self.geo_cache[host] = "UA"
-                return "UA"
-                
-            if host.endswith('.kz'):
-                self.geo_cache[host] = "KZ"
-                return "KZ"
-                
-            if host.endswith('.by'):
-                self.geo_cache[host] = "BY"
-                return "BY"
-                
-            if host.endswith('.tr'):
-                self.geo_cache[host] = "TR"
-                return "TR"
-            
-            # 3. Популярные хосты которые знаем
-            RU_HOSTS = ['.yandex.', '.mail.', '.vk.', '.rutube.', 
-                       '.rambler.', '.sber.', '.tinkoff.']
-            
-            for ru_host in RU_HOSTS:
-                if ru_host in host:
-                    self.geo_cache[host] = "RU"
-                    return "RU"
-            
-            # 4. Не знаем - UN
-            self.geo_cache[host] = "UN"
-            return "UN"
-                
-        except Exception:
-            return "UN"
-            
-    def generate_server_name(self, geo, index, rep_count, score, protocol=None):
-        """Генерирует имя для тега (после #)"""
-        
-        if score >= 500:
-            quality = "ELITE"
-        elif score >= 300:
-            quality = "PREMIUM"
-        elif score >= 150:
-            quality = "STANDARD"
-        else:
-            quality = "BASIC"
-        
-        flag = "".join(chr(ord(c.upper()) + 127397) for c in geo) if geo != "UN" else "🌐"
-        
-        # ДОБАВЛЕНО: Метка протокола
-        protocol_tag = ""
-        if protocol == 'xHTTP':
-            protocol_tag = "[X-HTTP] "
-        elif protocol == 'xUDP':
-            protocol_tag = "[X-UDP] "
-        elif protocol == 'Hysteria2':
-            protocol_tag = "[HY2] "
-        elif protocol == 'TUIC':
-            protocol_tag = "[TUIC] "
-        
-        return f"{flag} {protocol_tag}{geo}-{index:05d}-REP({rep_count})-HPP {quality}"
-
-    def cleanup_reputation(self, max_age_days=30, max_entries=10000):
-        now = int(time.time())
-        cutoff = now - (max_age_days * 86400)
-        clean_db = {k: v for k, v in self.reputation.items() if v.get('last_seen', 0) > cutoff}
-        if len(clean_db) > max_entries:
-            sorted_rep = sorted(clean_db.items(), key=lambda x: x[1]['count'], reverse=True)
-            clean_db = dict(sorted_rep[:max_entries])
-        self.reputation = clean_db
-
-def save(file, data):
-    """Функция сохранения файлов"""
-    if not data: 
-        return
-    try:
-        with open(file, 'w', encoding='utf-8') as f: 
-            f.write("\n".join(data))
-        print(f"💾 {file}: {len(data)} записей")
-    except Exception as e:
-        print(f"❌ Ошибка сохранения {file}: {e}")
-
-def main():
-    agg = MetaAggregator()
-    
-    def fetch(url):
-        try: 
-            return requests.get(url, timeout=15).text
-        except Exception as e:
-            print(f"⚠️ Ошибка загрузки {url[:50]}...: {e}")
-            return ""
-    
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚡ Сбор источников...")
-    with ThreadPoolExecutor(max_workers=20) as ex:
-        results = list(ex.map(fetch, urls))
-    
-    raw_nodes = []
-    for idx, content in enumerate(results):
-        if not content:
-            continue
-            
-        if "://" not in content[:100]:
-            try: 
-                content = base64.b64decode(content).decode('utf-8', errors='ignore')
-            except: 
-                continue
-        
-        nodes = [l.strip() for l in content.splitlines() if "://" in l and not l.startswith("//")]
-        raw_nodes.extend(nodes)
-        print(f"  📥 Источник {idx+1}: {len(nodes)} нод")
-
-    print(f"📊 Всего собрано нод: {len(raw_nodes)}")
-    
-    unique_map = {}
-    ss_nodes = []
-    cable_nodes = []
-    mobile_nodes = []
-    
-    processed_count = 0
-    for node in raw_nodes:
-        processed_count += 1
-        if processed_count % 1000 == 0:
-            print(f"  🔄 Обработано {processed_count}/{len(raw_nodes)} нод")
-            
-        if any(trash in node for trash in ["0.0.0.0", "127.0.0.1"]):
-            continue
-            
-        try:
-            base_link = node.split('#')[0]
-            tag = node.split('#')[1] if '#' in node else ""
-            
-            if base_link.startswith('ss://'):
-                if len(base_link) < 10:
-                    continue
-                
-                if any(x in base_link.lower() for x in ['vless', 'reality', 'vnext', 'uuid']):
-                    continue
-                
-                if '@' not in base_link and ':' not in base_link[5:]:
-                    try:
-                        b64_part = base_link[5:].split('#')[0]
-                        if not re.match(r'^[A-Za-z0-9+/=]+$', b64_part):
-                            continue
-                    except:
-                        continue
-                
-                ss_nodes.append(node)
-                continue
-            
-            p = urlparse(base_link)
-            ip_key = f"{p.scheme}@{p.netloc.split('@')[-1].split(':')[0]}"
-            score = agg.calculate_score(base_link)
-            
-            full_node_with_tag = f"{base_link}#{tag}" if tag else base_link
-            tag_lower = tag.lower()
-            if 'cable' in tag_lower:
-                cable_nodes.append(full_node_with_tag)
-            if 'mobile' in tag_lower:
-                mobile_nodes.append(full_node_with_tag)
-            
-            if ip_key not in unique_map or score > unique_map[ip_key]['score']:
-                unique_map[ip_key] = {
-                    'node': base_link, 
-                    'score': score, 
-                    'tag': tag,
-                    'full_with_tag': full_node_with_tag
-                }
-        except: 
-            continue
-    
-    sorted_nodes = sorted(unique_map.values(), key=lambda x: x['score'], reverse=True)
-    all_unique = [v['node'] for v in sorted_nodes]
-    
-    print(f"✅ Уникальных нод после фильтрации: {len(all_unique)}")
-    print(f"✅ SS нод: {len(ss_nodes)}")
-
-    # 1. Обновляем статистику
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Обновление статистики UUID/SNI...")
-    agg._update_statistics(all_unique)
-    
-    # 2. Обогащаем ноды данными
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Обогащение нод данными...")
-    enriched_nodes = []
-    for i, node in enumerate(all_unique):
-        score = agg.calculate_score(node)  # пересчитываем с учётом статистики
-        geo = agg.get_geo(node)
-        protocol = agg._extract_protocol(node)  # ДОБАВЛЕНО: извлечение протокола
-        enriched_nodes.append({
-            'node': node,
-            'score': score,
-            'sni': agg._extract_sni(node),
-            'uuid': agg._extract_uuid(node), 
-            'geo': geo,
-            'protocol': protocol  # ДОБАВЛЕНО
-        }) 
-    
-    # 3. Сортируем
-    enriched_nodes.sort(key=lambda x: x['score'], reverse=True)
-    
-    vless_pool = [n['node'] for n in enriched_nodes if not n['node'].startswith('ss://')][:5000]
-    ss_pool = ss_nodes[:2000]
-    
-    processed_vless = []
-    now_ts = int(time.time())
-    
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 Обработка воронки ТОП-5000...")
-    for i, node in enumerate(vless_pool):
-        if i % 500 == 0:
-            print(f"  ⏳ Обработано {i}/{len(vless_pool)} VLESS нод")
-            
-        node_id_hash = agg.get_node_id(node)
-        rep_entry = agg.reputation.get(node_id_hash, {"count": 0, "last_seen": now_ts})
-        rep_entry["count"] += 1
-        rep_entry["last_seen"] = now_ts
-        agg.reputation[node_id_hash] = rep_entry
-        
-        geo = agg.get_geo(node)
-        patched = agg.patch(node)
-        score = agg.calculate_score(node)
-        protocol = agg._extract_protocol(node)  # ДОБАВЛЕНО: извлечение протокола
-        
-        rep_val = rep_entry["count"]
-        geo_str = str(geo) if geo else "UN"
-        
-        name = agg.generate_server_name(geo_str, i+1, rep_val, score, protocol)  # ДОБАВЛЕНО: protocol
-        
-        processed_vless.append({'node': f"{patched}#{name}", 'geo': geo_str, 'score': score, 'raw': node})
-    
-    # 4. Функция определения ultra elite
-    def is_ultra_elite(node_data):
-        try:
-            node = node_data['node']
-            n_l = node.lower()
-            sni = node_data['sni']
-            score = node_data['score']
-            protocol = node_data.get('protocol')  # ДОБАВЛЕНО
-            
-            ultra_score = 0
-            
-            # ДОБАВЛЕНО: Приоритет для xHTTP и xUDP
-            if protocol in ['xHTTP', 'xUDP']:
-                ultra_score += 4
-            
-            # Elite SNI
-            if sni and any(elite_sni in sni for elite_sni in ULTRA_ELITE_SNI):
-                ultra_score += 3
-            
-            # Платные провайдеры
-            for patterns in PREMIUM_PROVIDER_PATTERNS.values():
-                if any(pattern in n_l for pattern in patterns):
-                    ultra_score += 2
-            
-            # xHTTP
-            if 'type=xhttp' in n_l:
-                ultra_score += 2
-                if 'mode=auto' in n_l or 'mode=stream-up' in n_l:
-                    ultra_score += 1
-                if 'xpaddingbytes=' in n_l:
-                    ultra_score += 1
-            
-            # Качественные настройки
+        # VLESS Reality/Vision
+        if protocol == 'vless':
             if 'flow=xtls-rprx-vision' in n_l:
-                ultra_score += 1
+                score += 500
+            elif 'reality' in n_l:
+                score += 400
+            else:
+                score += 200
+        
+        # TUIC
+        if protocol == 'tuic':
+            score += 450
+        
+        # Trojan
+        if protocol == 'trojan':
+            if 'reality' in n_l:
+                score += 350
+            else:
+                score += 150
+        
+        # Современные транспорты
+        if 'type=grpc' in n_l:
+            score += 100
+        if 'type=ws' in n_l:
+            score += 50
+        
+        # Порты
+        host_port = extract_host_port(node)
+        if host_port:
+            _, port = host_port
+            if str(port) in ELITE_PORTS:
+                score += 250
+            elif port == 443:
+                score += 100
+        
+        # SNI анализ
+        sni = extract_sni(node)
+        if sni:
+            # Черный список
+            if any(black in sni for black in BLACK_SNI):
+                score -= 2000
             
-            if any(fp in n_l for fp in ['fp=safari', 'fp=ios', 'fp=firefox', 'fp=edge']):
-                ultra_score += 1
+            # Элитные SNI
+            if any(elite in sni for elite in ULTRA_ELITE_SNI):
+                score += 300
             
-            # Элитные порты
-            if any(port in node for port in [f':{p}' for p in ELITE_PORTS]):
-                ultra_score += 2
+            # Целевые SNI
+            if any(target == sni or sni.endswith('.' + target) for target in TARGET_SNI):
+                score += 200
             
-            # UUID частота
-            uuid = node_data['uuid']
-            if uuid:
-                uuid_count = agg._get_uuid_frequency(uuid)
-                if uuid_count >= 10:
-                    ultra_score += 3
-                elif uuid_count >= 5:
-                    ultra_score += 2
+            # Редкие SNI
+            sni_freq = self.sni_counter.get(sni, 0)
+            if sni_freq <= 5:
+                score += 100
             
             # Поддомены
-            if sni and (sni.count('.') >= 3 or any(sub in sni for sub in ['st.', 'api.', 'cdn.', 'disk.'])):
-                ultra_score += 1
-            
-            # Редкий SNI
-            if sni and agg._get_sni_frequency(sni) <= 5:
-                ultra_score += 2
-            
-            # Порог
-            if len(enriched_nodes) > 0:
-                top_30_threshold = enriched_nodes[int(len(enriched_nodes) * 0.3)]['score']
-            else:
-                top_30_threshold = 0
-            
-            return ultra_score >= 5 and score >= top_30_threshold
-        except:
-            return False
-    
-    # 5. Собираем ultra elite (С ТЕГАМИ КАК В business.txt)
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💎 Формирование ULTRA ELITE списка...")
-    ultra_elite_servers = []
-    
-    # Берем ТОЛЬКО уже обработанные ноды из processed_vless (они уже имеют теги с флагами)
-    elite_counter = 0
-    for processed in processed_vless:
-        if elite_counter >= 1000:
-            break
+            if sni.count('.') >= 3 or any(sub in sni for sub in ['st.', 'api.', 'cdn.', 'disk.']):
+                score += 80
         
-        # Находим эту ноду в enriched_nodes для проверки is_ultra_elite
-        node_data = None
-        for n in enriched_nodes:
-            if n['node'] == processed['raw']:
-                node_data = n
-                break
+        # UUID частота
+        uuid = self._extract_uuid(node)
+        if uuid:
+            uuid_freq = self.uuid_counter.get(uuid, 0)
+            if uuid_freq >= 10:
+                score += 150
+            elif uuid_freq >= 5:
+                score += 80
+            elif uuid_freq >= 2:
+                score += 30
         
-        if node_data and is_ultra_elite(node_data):
-            ultra_elite_servers.append(processed['node'])  # Уже содержит тег с флагом
-            elite_counter += 1
+        # ALPN
+        if 'alpn=h3' in n_l or 'alpn=h3-29' in n_l:
+            score += 60
+        elif 'alpn=h2' in n_l:
+            score += 30
         
-        # Прогресс
-        if elite_counter > 0 and elite_counter % 100 == 0:
-            print(f"    ⏳ Найдено {elite_counter} ULTRA ELITE серверов")
-
-    print(f"    ✅ Итог: {elite_counter} ULTRA ELITE серверов с тегами")
-
-    # 6. Сохраняем ultra elite
-    with open("ultra_elite.txt", 'w', encoding='utf-8') as f:
-        f.write("\n".join(ultra_elite_servers))
-    print(f"  💎 ultra_elite.txt: {len(ultra_elite_servers)} ULTRA ELITE серверов")
+        # Fingerprint разнообразие
+        if any(fp in n_l for fp in ['fp=safari', 'fp=ios', 'fp=firefox', 'fp=edge']):
+            score += 50
+        
+        return max(score, 0)
     
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Подготовка ultra elite...")
+    def get_tier(self, score: int, protocol: str) -> int:
+        """Определяет тир ноды"""
+        # Tier 1: Hysteria2/Reality с высоким скором
+        if protocol in ['hysteria2', 'tuic']:
+            if score >= 500:
+                return 1
+        
+        if protocol == 'vless' and ('reality' in protocol or 'vision' in protocol):
+            if score >= 400:
+                return 1
+        
+        # Tier 2: остальные живые
+        if score >= 150:
+            return 2
+        
+        # Tier 3: низкое качество
+        return 3
+
+# ============================================================================
+# ФИЛЬТРАЦИЯ И ВАЛИДАЦИЯ
+# ============================================================================
+
+class NodeFilter:
+    """Фильтрация и валидация нод"""
     
-    # Сохранение остальных файлов
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение файлов...")
-
-    save("hard_hidden.txt", [n['node'] for n in processed_vless[:1000] if n['score'] >= 500])
-    save("mob.txt", [n['node'] for n in processed_vless if n['score'] >= 300][:1000])
-    save("med.txt", [n['node'] for n in processed_vless if 150 <= n['score'] < 450][:2000])
-    save("vls.txt", [n['node'] for n in processed_vless])
-
-    filtered_ss = []
-    for ss_node in ss_pool:
+    @staticmethod
+    def is_valid_protocol(node: str) -> bool:
+        """Проверяет, разрешен ли протокол"""
+        protocol = extract_protocol(node)
+        
+        if protocol == 'ss':
+            return validate_ss_method(node)
+        
+        return protocol in ALLOWED_PROTOCOLS
+    
+    @staticmethod
+    def is_blacklisted(node: str) -> bool:
+        """Проверяет черный список"""
+        # Проверка мусорных адресов
+        if any(trash in node for trash in ["0.0.0.0", "127.0.0.1", "localhost"]):
+            return True
+        
+        # Проверка хоста
+        host_port = extract_host_port(node)
+        if host_port:
+            host, _ = host_port
+            if is_blacklisted_host(host):
+                return True
+        
+        # Проверка SNI
+        sni = extract_sni(node)
+        if sni and any(black in sni for black in BLACK_SNI):
+            return True
+        
+        return False
+    
+    @staticmethod
+    def clean_node(node: str) -> str:
+        """Очищает ноду, убирая только комментарий"""
+        # Убираем только тег после #
+        return node.split('#')[0]
+    
+    @staticmethod
+    def deduplicate_key(node: str) -> str:
+        """Генерирует ключ для дедупликации: protocol:ip:port"""
         try:
-            base_link = ss_node.split('#')[0]
-            if agg.get_geo(base_link) != "RU":
-                filtered_ss.append(ss_node)
+            protocol = extract_protocol(node)
+            host_port = extract_host_port(node)
+            
+            if host_port:
+                host, port = host_port
+                return f"{protocol}:{host}:{port}"
         except:
-            continue
+            pass
+        
+        # Фоллбэк на хеш
+        return get_node_hash(node)
+    
+    @staticmethod
+    def parse_nodes_from_text(text: str) -> List[str]:
+        """Парсит ноды из текста"""
+        nodes = []
+        
+        # Попытка декодировать base64
+        if "://" not in text[:100]:
+            try:
+                decoded = base64.b64decode(text).decode('utf-8', errors='ignore')
+                text = decoded
+            except:
+                pass
+        
+        # Извлекаем строки с протоколами
+        for line in text.splitlines():
+            line = line.strip()
+            if not line or line.startswith(('/', '#', ';')):
+                continue
+            
+            # Проверяем наличие протокола
+            if any(proto in line for proto in ['://', 'ss://', 'vless://', 'trojan://', 'hysteria2://', 'tuic://']):
+                nodes.append(line)
+        
+        return nodes
 
-    save("ss.txt", filtered_ss[:2000])
-    save("all.txt", all_unique[:25000])
+# ============================================================================
+# АСИНХРОННАЯ ПРОВЕРКА TCP
+# ============================================================================
 
-    save("whitelist_cable.txt", cable_nodes)
-    save("whitelist_mobile.txt", mobile_nodes)
+class AsyncTCPChecker:
+    """Асинхронная проверка доступности TCP портов"""
+    
+    def __init__(self, timeout: float = TCP_CONNECT_TIMEOUT, max_concurrent: int = MAX_CONCURRENT_CHECKS):
+        self.timeout = timeout
+        self.semaphore = asyncio.Semaphore(max_concurrent)
+        self.results = {}
+    
+    async def check_port(self, host: str, port: int) -> bool:
+        """Проверяет доступность порта"""
+        async with self.semaphore:
+            try:
+                # Попытка подключения
+                conn = asyncio.open_connection(host, port)
+                reader, writer = await asyncio.wait_for(conn, timeout=self.timeout)
+                
+                # Закрываем соединение
+                writer.close()
+                await writer.wait_closed()
+                
+                return True
+            
+            except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
+                return False
+            except Exception as e:
+                # Логируем неожиданные ошибки
+                # print(f"Неожиданная ошибка при проверке {host}:{port}: {e}")
+                return False
+    
+    async def check_node(self, node: str) -> Tuple[str, bool]:
+        """Проверяет ноду"""
+        host_port = extract_host_port(node)
+        
+        if not host_port:
+            return (node, False)
+        
+        host, port = host_port
+        
+        # Кэш результатов
+        cache_key = f"{host}:{port}"
+        if cache_key in self.results:
+            return (node, self.results[cache_key])
+        
+        # Проверка
+        is_alive = await self.check_port(host, port)
+        self.results[cache_key] = is_alive
+        
+        return (node, is_alive)
+    
+    async def check_batch(self, nodes: List[str]) -> List[str]:
+        """Проверяет batch нод"""
+        tasks = [self.check_node(node) for node in nodes]
+        results = await asyncio.gather(*tasks)
+        
+        # Возвращаем только живые ноды
+        alive_nodes = [node for node, is_alive in results if is_alive]
+        
+        return alive_nodes
 
-    try:
-        shutil.copy("hard_hidden.txt", "business.txt")
-        shutil.copy("vls.txt", "vless_vmess.txt")
-        shutil.copy("all.txt", "sub.txt")
-        shutil.copy("all.txt", "all_configs.txt")
-        print("✅ Созданы дополнительные копии файлов")
-    except Exception as e:
-        print(f"⚠️ Ошибка копирования файлов: {e}")
+# ============================================================================
+# АСИНХРОННЫЙ ЗАГРУЗЧИК
+# ============================================================================
 
-    agg.cleanup_reputation()
-    with open(agg.rep_path, 'w', encoding='utf-8') as f:
-        json.dump(agg.reputation, f, indent=2)
-    print("✅ Обновлена репутация серверов")
+class AsyncDownloader:
+    """Асинхронная загрузка конфигураций"""
+    
+    def __init__(self, timeout: int = HTTP_TIMEOUT):
+        self.timeout = aiohttp.ClientTimeout(total=timeout)
+        self.user_agent_idx = 0
+    
+    def _get_user_agent(self) -> str:
+        """Ротация User-Agent"""
+        ua = USER_AGENTS[self.user_agent_idx]
+        self.user_agent_idx = (self.user_agent_idx + 1) % len(USER_AGENTS)
+        return ua
+    
+    async def fetch(self, session: aiohttp.ClientSession, url: str) -> str:
+        """Загружает один источник"""
+        try:
+            headers = {'User-Agent': self._get_user_agent()}
+            async with session.get(url, headers=headers, timeout=self.timeout) as response:
+                if response.status == 200:
+                    return await response.text()
+                else:
+                    print(f"⚠️ {url[:60]}... -> HTTP {response.status}")
+                    return ""
+        except asyncio.TimeoutError:
+            print(f"⏱️ Таймаут: {url[:60]}...")
+            return ""
+        except Exception as e:
+            print(f"❌ Ошибка: {url[:60]}... -> {str(e)[:50]}")
+            return ""
+    
+    async def fetch_all(self, urls: List[str]) -> List[str]:
+        """Загружает все источники"""
+        async with aiohttp.ClientSession() as session:
+            tasks = [self.fetch(session, url) for url in urls]
+            results = await asyncio.gather(*tasks)
+            return results
+class ProxyAggregator:
+    """Главный класс агрегатора"""
+    
+    def __init__(self):
+        self.reputation = ReputationManager()
+        self.scorer = NodeScorer(self.reputation)
+        self.filter = NodeFilter()
+        self.downloader = AsyncDownloader()
+        self.checker = AsyncTCPChecker()
+        
+        self.raw_nodes: List[str] = []
+        self.filtered_nodes: List[Dict] = []
+        self.checked_nodes: List[Dict] = []
+    
+    async def download_sources(self):
+        """Скачивает все источники"""
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 📥 Загрузка источников...")
+        
+        results = await self.downloader.fetch_all(SOURCES)
+        
+        total_nodes = 0
+        for idx, content in enumerate(results):
+            if not content:
+                continue
+            
+            nodes = self.filter.parse_nodes_from_text(content)
+            self.raw_nodes.extend(nodes)
+            total_nodes += len(nodes)
+            
+            if len(nodes) > 0:
+                print(f"  ✓ Источник {idx+1}: {len(nodes)} нод")
+        
+        print(f"📊 Всего загружено: {total_nodes} нод")
+    
+    def filter_and_deduplicate(self):
+        """Фильтрует и дедуплицирует ноды"""
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔍 Фильтрация и дедупликация...")
+        
+        # Словарь для дедупликации
+        unique_map: Dict[str, Dict] = {}
+        
+        processed = 0
+        filtered_out = {
+            'blacklist': 0,
+            'protocol': 0,
+            'duplicate': 0
+        }
+        
+        for node in self.raw_nodes:
+            processed += 1
+            
+            if processed % 5000 == 0:
+                print(f"  🔄 Обработано {processed}/{len(self.raw_nodes)}")
+            
+            # Очистка
+            clean_node = self.filter.clean_node(node)
+            
+            # Проверка черного списка
+            if self.filter.is_blacklisted(clean_node):
+                filtered_out['blacklist'] += 1
+                continue
+            
+            # Проверка протокола
+            if not self.filter.is_valid_protocol(clean_node):
+                filtered_out['protocol'] += 1
+                continue
+            
+            # Дедупликация
+            dedup_key = self.filter.deduplicate_key(clean_node)
+            
+            if dedup_key in unique_map:
+                filtered_out['duplicate'] += 1
+                continue
+            
+            # Сохраняем
+            protocol = extract_protocol(clean_node)
+            unique_map[dedup_key] = {
+                'node': clean_node,
+                'protocol': protocol,
+                'original': node  # Сохраняем оригинал с тегом
+            }
+        
+        # Конвертируем в список
+        self.filtered_nodes = list(unique_map.values())
+        
+        print(f"✅ Уникальных нод: {len(self.filtered_nodes)}")
+        print(f"  📛 Фильтры: blacklist={filtered_out['blacklist']}, "
+              f"protocol={filtered_out['protocol']}, duplicate={filtered_out['duplicate']}")
+    
+    def calculate_scores(self):
+        """Вычисляет оценки для нод"""
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Расчет оценок...")
+        
+        # Обновляем статистику
+        nodes_list = [n['node'] for n in self.filtered_nodes]
+        self.scorer.update_statistics(nodes_list)
+        
+        # Вычисляем оценки
+        for node_data in self.filtered_nodes:
+            node = node_data['node']
+            score = self.scorer.calculate_score(node)
+            tier = self.scorer.get_tier(score, node_data['protocol'])
+            
+            node_data['score'] = score
+            node_data['tier'] = tier
+        
+        # Сортируем по оценке
+        self.filtered_nodes.sort(key=lambda x: x['score'], reverse=True)
+        
+        print(f"✅ Оценки рассчитаны")
+    
+    async def check_nodes(self):
+        """Проверяет доступность нод"""
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔌 Проверка доступности...")
+        
+        # Берем топ-5000 для проверки
+        nodes_to_check = self.filtered_nodes[:MAX_NODES_TO_CHECK]
+        nodes_list = [n['node'] for n in nodes_to_check]
+        
+        print(f"  📡 Проверка {len(nodes_list)} нод (timeout={TCP_CONNECT_TIMEOUT}s)...")
+        
+        # Асинхронная проверка
+        alive_nodes = await self.checker.check_batch(nodes_list)
+        alive_set = set(alive_nodes)
+        
+        # Фильтруем живые
+        self.checked_nodes = [
+            n for n in self.filtered_nodes 
+            if n['node'] in alive_set or self.filtered_nodes.index(n) >= MAX_NODES_TO_CHECK
+        ]
+        
+        alive_count = len(alive_nodes)
+        dead_count = len(nodes_list) - alive_count
+        
+        print(f"✅ Живых: {alive_count} | ❌ Мертвых: {dead_count}")
+        print(f"📊 Итого нод после проверки: {len(self.checked_nodes)}")
+    
+    def update_reputation(self):
+        """Обновляет репутацию"""
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Обновление репутации...")
+        
+        for node_data in self.checked_nodes:
+            node_hash = get_node_hash(node_data['node'])
+            self.reputation.update(node_hash)
+        
+        # Очистка старых записей
+        self.reputation.cleanup()
+        
+        # Сохранение
+        self.reputation.save()
+        
+        print(f"✅ Репутация обновлена ({len(self.reputation.reputation)} записей)")
+    
+    def generate_server_name(self, node_data: Dict, index: int) -> str:
+        """Генерирует имя сервера"""
+        protocol = node_data['protocol'].upper()
+        score = node_data['score']
+        tier = node_data['tier']
+        
+        # Определяем качество
+        if tier == 1:
+            quality = "ELITE"
+        elif tier == 2:
+            quality = "PREMIUM"
+        else:
+            quality = "STANDARD"
+        
+        # Получаем репутацию
+        node_hash = get_node_hash(node_data['node'])
+        rep_count = self.reputation.get_count(node_hash)
+        
+        # Формируем имя
+        name = f"[{protocol}] {index:04d} | T{tier} {quality} | REP:{rep_count} | SCORE:{score}"
+        
+        return name
+    
+    def save_results(self):
+        """Сохраняет результаты в файлы"""
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение результатов...")
+        
+        # Разделяем по категориям
+        tier1_nodes = []
+        tier2_nodes = []
+        ss_nodes = []
+        all_nodes = []
+        
+        for idx, node_data in enumerate(self.checked_nodes):
+            node = node_data['node']
+            protocol = node_data['protocol']
+            tier = node_data['tier']
+            
+            # Генерируем имя
+            name = self.generate_server_name(node_data, idx + 1)
+            full_node = f"{node}#{name}"
+            
+            # Распределяем по категориям
+            all_nodes.append(full_node)
+            
+            if protocol == 'ss':
+                ss_nodes.append(full_node)
+            else:
+                if tier == 1:
+                    tier1_nodes.append(full_node)
+                elif tier == 2:
+                    tier2_nodes.append(full_node)
+        
+        # Сохраняем файлы
+        files_saved = {}
+        
+        # ultra_elite.txt (Tier 1)
+        self._save_file('ultra_elite.txt', tier1_nodes[:1000])
+        files_saved['ultra_elite.txt'] = min(len(tier1_nodes), 1000)
+        
+        # hard_hidden.txt (Tier 1, топ-500)
+        self._save_file('hard_hidden.txt', tier1_nodes[:500])
+        files_saved['hard_hidden.txt'] = min(len(tier1_nodes), 500)
+        
+        # business.txt (копия hard_hidden)
+        self._save_file('business.txt', tier1_nodes[:500])
+        files_saved['business.txt'] = min(len(tier1_nodes), 500)
+        
+        # mob.txt (Tier 1+2, топ-1000)
+        mobile_nodes = tier1_nodes + tier2_nodes
+        self._save_file('mob.txt', mobile_nodes[:1000])
+        files_saved['mob.txt'] = min(len(mobile_nodes), 1000)
+        
+        # med.txt (Tier 2, топ-2000)
+        self._save_file('med.txt', tier2_nodes[:2000])
+        files_saved['med.txt'] = min(len(tier2_nodes), 2000)
+        
+        # vls.txt (все VLESS/Trojan/Hysteria/TUIC)
+        non_ss = [n for n in all_nodes if not n.startswith('ss://')]
+        self._save_file('vls.txt', non_ss)
+        files_saved['vls.txt'] = len(non_ss)
+        
+        # vless_vmess.txt (копия vls)
+        self._save_file('vless_vmess.txt', non_ss)
+        files_saved['vless_vmess.txt'] = len(non_ss)
+        
+        # ss.txt (Shadowsocks)
+        self._save_file('ss.txt', ss_nodes[:2000])
+        files_saved['ss.txt'] = min(len(ss_nodes), 2000)
+        
+        # all.txt (все ноды)
+        self._save_file('all.txt', all_nodes[:25000])
+        files_saved['all.txt'] = min(len(all_nodes), 25000)
+        
+        # sub.txt (копия all)
+        self._save_file('sub.txt', all_nodes[:25000])
+        files_saved['sub.txt'] = min(len(all_nodes), 25000)
+        
+        # all_configs.txt (копия all)
+        self._save_file('all_configs.txt', all_nodes[:25000])
+        files_saved['all_configs.txt'] = min(len(all_nodes), 25000)
+        
+        print("✅ Файлы сохранены:")
+        for filename, count in files_saved.items():
+            print(f"  📄 {filename}: {count} нод")
+    
+    def _save_file(self, filename: str, nodes: List[str]):
+        """Вспомогательная функция сохранения файла"""
+        try:
+            if not nodes:
+                # Создаем пустой файл
+                with open(filename, 'w', encoding='utf-8') as f:
+                    pass
+                return
+            
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(nodes))
+        except Exception as e:
+            print(f"❌ Ошибка сохранения {filename}: {e}")
+    
+    async def run(self):
+        """Главный метод запуска"""
+        start_time = time.time()
+        
+        print("=" * 70)
+        print("🚀 АСИНХРОННЫЙ ПРОКСИ-АГРЕГАТОР")
+        print("=" * 70)
+        
+        # 1. Загрузка источников
+        await self.download_sources()
+        
+        # 2. Фильтрация и дедупликация
+        self.filter_and_deduplicate()
+        
+        # 3. Расчет оценок
+        self.calculate_scores()
+        
+        # 4. Проверка доступности
+        await self.check_nodes()
+        
+        # 5. Обновление репутации
+        self.update_reputation()
+        
+        # 6. Сохранение результатов
+        self.save_results()
+        
+        elapsed = time.time() - start_time
+        
+        print("=" * 70)
+        print(f"✅ ЗАВЕРШЕНО за {elapsed:.1f}s")
+        print(f"📊 Статистика:")
+        print(f"  - Загружено: {len(self.raw_nodes)} нод")
+        print(f"  - После фильтрации: {len(self.filtered_nodes)} нод")
+        print(f"  - После проверки: {len(self.checked_nodes)} нод")
+        
+        # Статистика по протоколам
+        protocol_stats = {}
+        for node_data in self.checked_nodes:
+            proto = node_data['protocol']
+            protocol_stats[proto] = protocol_stats.get(proto, 0) + 1
+        
+        print(f"  - По протоколам:")
+        for proto, count in sorted(protocol_stats.items(), key=lambda x: x[1], reverse=True):
+            print(f"    • {proto.upper()}: {count}")
+        
+        print("=" * 70)
 
-    if agg.reader:
-        agg.reader.close()
+# ============================================================================
+# ТОЧКА ВХОДА
+# ============================================================================
 
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Скрипт успешно завершен.")
-    print(f"📊 Итоги:")
-    print(f"  - Всего нод: {len(raw_nodes)}")
-    print(f"  - Уникальных: {len(all_unique)}")
-    print(f"  - ULTRA ELITE: {len(ultra_elite_servers)}")
-    print(f"  - Обработано VLESS: {len(processed_vless)}")
-    print(f"  - SS нод: {len(filtered_ss)}")
+async def main():
+    """Главная функция"""
+    aggregator = ProxyAggregator()
+    await aggregator.run()
 
 if __name__ == "__main__":
-    main()
-
-
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n⚠️ Прервано пользователем")
+    except Exception as e:
+        print(f"\n❌ Критическая ошибка: {e}")
+        import traceback
+        traceback.print_exc() 
