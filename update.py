@@ -120,6 +120,7 @@ SOURCES = [
     "https://s3c3.001.gpucloud.ru/dggdu/xixz",
     "https://raw.githubusercontent.com/HikaruApps/WhiteLattice/refs/heads/main/subscriptions/config.txt", 
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
+    "https://vpn.yzewe.ru/1226960582/tVd6RXx-9V7q0SE8IjGxsw", 
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_SS%2BAll_RUS.txt",
@@ -1232,3 +1233,4 @@ if __name__ == "__main__":
         print(f"\n❌ Критическая ошибка: {e}")
         import traceback
         traceback.print_exc() 
+
