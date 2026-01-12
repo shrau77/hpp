@@ -11,15 +11,48 @@ from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, unquote
 from typing import List, Dict, Set, Optional, Tuple
 import socket
 
+# Расширенные импорты
+try:
+    import pycountry  # Для нормализации стран
+    HAS_PYCOUNTRY = True
+except ImportError:
+    HAS_PYCOUNTRY = False
+
+try:
+    import validators  # Для валидации URL/IP
+    HAS_VALIDATORS = True
+except ImportError:
+    HAS_VALIDATORS = False
+
+try:
+    import tldextract  # Для анализа доменов
+    HAS_TLDEXTRACT = True
+except ImportError:
+    HAS_TLDEXTRACT = False
+
+try:
+    from ipaddress import ip_address, ip_network, IPv4Address, IPv6Address
+    HAS_IPADDRESS = True
+except ImportError:
+    HAS_IPADDRESS = False
+
 # ============================================================================
 # КОНФИГУРАЦИЯ
 # ============================================================================
 
-# ASN Blacklist - забаненные хостинги
+# ASN Blacklist - расширенный список хостингов
 ASN_BLACKLIST = {
     'hetzner', 'digitalocean', 'ovh', 'linode', 'vultr', 
-    'contabo', 'amazon', 'google', 'microsoft', 'cloudflare'
+    'contabo', 'amazon', 'google', 'microsoft', 'cloudflare',
+    'scaleway', 'packet', 'leaseweb', 'quadranet', 'colocrossing',
+    'choopa', 'sharktech', 'voxility', 'psychz', 'serverius'
 }
+
+# Известные VPN/прокси сети (часто заблокированы)
+VPN_NETWORKS = [
+    '185.0.0.0/8',    # Много VPN провайдеров
+    '45.0.0.0/8',     # Частые VPN блоки
+]
 
 # Разрешенные протоколы
 ALLOWED_PROTOCOLS = {'vless', 'hysteria2', 'hy2', 'tuic', 'ss'}
@@ -36,10 +69,12 @@ MODERN_SS_METHODS = {
 # User-Agent для ротации
 USER_AGENTS = [
     'Happ/3.7.0',
-    'Happ/3.8.1'
+    'Happ/3.8.1',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'v2rayN/6.40'
 ]
 
-# Элитные SNI (сохраняем из оригинала)
+# Ультра-элитные SNI
 ULTRA_ELITE_SNI = [
     "hls-svod.itunes.apple.com", "itunes.apple.com",
     "fastsync.xyz", "cloudlane.xyz", "powodzenia.xyz", 
@@ -93,10 +128,14 @@ TARGET_SNI = [
 ]
 
 # Черный список SNI
-BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com', 'porn']
+BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 
+             'twitter.com', 'porn', 'xxx', 'sex']
 
 # Элитные порты
 ELITE_PORTS = {'2053', '2083', '2087', '2096', '8447', '9443', '10443', '443'}
+
+# Подозрительные порты (часто скомпрометированы)
+SUSPICIOUS_PORTS = {'80', '8080', '3128', '1080', '8888', '9999'}
 
 # Таймауты
 TCP_CONNECT_TIMEOUT = 1.5
@@ -106,7 +145,7 @@ HTTP_TIMEOUT = 15
 MAX_NODES_TO_CHECK = 5000
 MAX_CONCURRENT_CHECKS = 200
 
-# Источники конфигураций
+# Источники (сокращенный список для примера)
 SOURCES = [
     "https://s3c3.001.gpucloud.ru/dggdu/xixz",
     "https://raw.githubusercontent.com/HikaruApps/WhiteLattice/refs/heads/main/subscriptions/config.txt", 
@@ -157,23 +196,17 @@ SOURCES = [
     *[f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" for i in range(1, 27)]
 ]
 
-# Добавляем источники из диапазона
-SOURCES.extend([
-    f"https://raw.githubusercontent.com/AvenCores/goida-vpn-configs/refs/heads/main/githubmirror/{i}.txt" 
-    for i in range(1, 27)
-])
-
 # ============================================================================
-# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# УТИЛИТЫ
 # ============================================================================
 
 def get_node_hash(node: str) -> str:
-    """Генерирует хеш для ноды (без тега)"""
+    """Генерирует хеш для ноды"""
     base_link = node.split('#')[0]
     return hashlib.md5(base_link.encode()).hexdigest()
 
 def extract_protocol(node: str) -> Optional[str]:
-    """Извлекает протокол из ноды"""
+    """Извлекает протокол"""
     if node.startswith('ss://'):
         return 'ss'
     elif node.startswith('vless://'):
@@ -187,7 +220,7 @@ def extract_protocol(node: str) -> Optional[str]:
     return None
 
 def extract_sni(node: str) -> Optional[str]:
-    """Извлекает SNI из ноды"""
+    """Извлекает SNI"""
     try:
         match = re.search(r'[?&]sni=([^&?#\s]+)', node.lower())
         if match:
@@ -197,28 +230,27 @@ def extract_sni(node: str) -> Optional[str]:
     return None
 
 def extract_host_port(node: str) -> Optional[Tuple[str, int]]:
-    """Извлекает хост и порт из ноды"""
+    """Извлекает хост и порт"""
     try:
         parsed = urlparse(node)
-        netloc = parsed.netloc.split('@')[-1]  # Убираем user info
+        netloc = parsed.netloc.split('@')[-1]
         
         if ':' in netloc:
             host, port = netloc.rsplit(':', 1)
             return (host, int(port))
         else:
-            return (netloc, 443)  # Дефолтный порт
+            return (netloc, 443)
     except:
         return None
 
 def is_blacklisted_host(host: str) -> bool:
-    """Проверяет, находится ли хост в черном списке ASN"""
+    """Проверяет ASN blacklist"""
     host_lower = host.lower()
     return any(asn in host_lower for asn in ASN_BLACKLIST)
 
 def validate_ss_method(node: str) -> bool:
-    """Проверяет, использует ли Shadowsocks современный метод"""
+    """Проверяет метод Shadowsocks"""
     try:
-        # Попытка извлечь метод из base64
         base_part = node[5:].split('#')[0].split('@')[0]
         
         try:
@@ -226,14 +258,87 @@ def validate_ss_method(node: str) -> bool:
             method = decoded.split(':')[0]
             return method in MODERN_SS_METHODS
         except:
-            # Если не получилось декодировать, проверяем по строке
             return any(method in node.lower() for method in MODERN_SS_METHODS)
     except:
         return False
 
-def is_ip_address(host: str) -> bool:
-    """Проверяет, является ли строка IP-адресом"""
-    return bool(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', host))
+# ============================================================================
+# РАСШИРЕННЫЕ ВАЛИДАТОРЫ
+# ============================================================================
+
+class EnhancedValidator:
+    """Расширенная валидация с использованием дополнительных библиотек"""
+    
+    @staticmethod
+    def validate_ip(ip: str) -> bool:
+        """Проверяет корректность IP"""
+        if HAS_IPADDRESS:
+            try:
+                ip_obj = ip_address(ip)
+                # Проверяем, что IP не приватный и не зарезервированный
+                if ip_obj.is_private or ip_obj.is_reserved or ip_obj.is_loopback:
+                    return False
+                return True
+            except:
+                return False
+        elif HAS_VALIDATORS:
+            return validators.ipv4(ip) or validators.ipv6(ip)
+        else:
+            # Fallback на regex
+            return bool(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', ip))
+    
+    @staticmethod
+    def validate_domain(domain: str) -> bool:
+        """Проверяет корректность домена"""
+        if HAS_VALIDATORS:
+            return validators.domain(domain)
+        else:
+            # Простая проверка
+            pattern = r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
+            return bool(re.match(pattern, domain))
+    
+    @staticmethod
+    def validate_port(port: int) -> bool:
+        """Проверяет корректность порта"""
+        return 1 <= port <= 65535
+    
+    @staticmethod
+    def is_in_vpn_network(ip: str) -> bool:
+        """Проверяет, находится ли IP в известных VPN сетях"""
+        if not HAS_IPADDRESS:
+            return False
+        
+        try:
+            ip_obj = ip_address(ip)
+            for network_str in VPN_NETWORKS:
+                network = ip_network(network_str, strict=False)
+                if ip_obj in network:
+                    return True
+            return False
+        except:
+            return False
+    
+    @staticmethod
+    def analyze_domain(domain: str) -> Dict:
+        """Анализирует домен с помощью tldextract"""
+        if HAS_TLDEXTRACT:
+            ext = tldextract.extract(domain)
+            return {
+                'subdomain': ext.subdomain,
+                'domain': ext.domain,
+                'suffix': ext.suffix,
+                'is_subdomain': bool(ext.subdomain),
+                'levels': len(domain.split('.'))
+            }
+        else:
+            parts = domain.split('.')
+            return {
+                'subdomain': parts[0] if len(parts) > 2 else '',
+                'domain': parts[-2] if len(parts) > 1 else domain,
+                'suffix': parts[-1] if len(parts) > 0 else '',
+                'is_subdomain': len(parts) > 2,
+                'levels': len(parts)
+            }
 
 # ============================================================================
 # КЛАСС REPUTATION MANAGER
@@ -247,12 +352,11 @@ class ReputationManager:
         self.reputation: Dict[str, Dict] = self._load()
         
     def _load(self) -> Dict:
-        """Загружает репутацию из файла"""
+        """Загружает репутацию"""
         if os.path.exists(self.reputation_file):
             try:
                 with open(self.reputation_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    # Миграция старого формата
                     for k, v in data.items():
                         if isinstance(v, int):
                             data[k] = {"count": v, "last_seen": int(time.time())}
@@ -262,7 +366,7 @@ class ReputationManager:
         return {}
     
     def save(self):
-        """Сохраняет репутацию в файл"""
+        """Сохраняет репутацию"""
         try:
             with open(self.reputation_file, 'w', encoding='utf-8') as f:
                 json.dump(self.reputation, f, indent=2)
@@ -270,7 +374,7 @@ class ReputationManager:
             print(f"❌ Ошибка сохранения репутации: {e}")
     
     def update(self, node_hash: str):
-        """Обновляет репутацию ноды"""
+        """Обновляет репутацию"""
         now = int(time.time())
         if node_hash not in self.reputation:
             self.reputation[node_hash] = {"count": 0, "last_seen": now}
@@ -279,21 +383,19 @@ class ReputationManager:
         self.reputation[node_hash]["last_seen"] = now
     
     def get_count(self, node_hash: str) -> int:
-        """Возвращает счетчик репутации"""
+        """Возвращает счетчик"""
         return self.reputation.get(node_hash, {}).get("count", 0)
     
     def cleanup(self, max_age_days: int = 30, max_entries: int = 10000):
-        """Очищает старые записи репутации"""
+        """Очищает старые записи"""
         now = int(time.time())
         cutoff = now - (max_age_days * 86400)
         
-        # Удаляем старые записи
         clean_db = {
             k: v for k, v in self.reputation.items() 
             if v.get('last_seen', 0) > cutoff
         }
         
-        # Ограничиваем размер
         if len(clean_db) > max_entries:
             sorted_rep = sorted(
                 clean_db.items(), 
@@ -305,38 +407,55 @@ class ReputationManager:
         self.reputation = clean_db
     
     def clear(self):
-        """Полная очистка репутации"""
+        """Полная очистка"""
         self.reputation = {}
         if os.path.exists(self.reputation_file):
             os.remove(self.reputation_file)
         print("✅ Репутация полностью очищена")
+
+# ============================================================================
+# СИСТЕМА ОЦЕНКИ
+# ============================================================================
+
 class NodeScorer:
-    """Система оценки качества нод"""
+    """Расширенная система оценки"""
     
-    def __init__(self, reputation_manager: 'ReputationManager'):
+    def __init__(self, reputation_manager: ReputationManager):
         self.reputation = reputation_manager
+        self.validator = EnhancedValidator()
         self.uuid_counter: Dict[str, int] = {}
         self.sni_counter: Dict[str, int] = {}
+        self.ip_counter: Dict[str, int] = {}
     
     def update_statistics(self, nodes: List[str]):
-        """Обновляет статистику UUID и SNI"""
+        """Обновляет статистику"""
         self.uuid_counter.clear()
         self.sni_counter.clear()
+        self.ip_counter.clear()
         
         for node in nodes:
             try:
+                # UUID
                 uuid = self._extract_uuid(node)
                 if uuid:
                     self.uuid_counter[uuid] = self.uuid_counter.get(uuid, 0) + 1
                 
+                # SNI
                 sni = extract_sni(node)
                 if sni:
                     self.sni_counter[sni] = self.sni_counter.get(sni, 0) + 1
+                
+                # IP
+                host_port = extract_host_port(node)
+                if host_port:
+                    host, _ = host_port
+                    if self.validator.validate_ip(host):
+                        self.ip_counter[host] = self.ip_counter.get(host, 0) + 1
             except:
                 continue
     
     def _extract_uuid(self, node: str) -> Optional[str]:
-        """Извлекает UUID из ноды"""
+        """Извлекает UUID"""
         try:
             if node.startswith('vmess://'):
                 uuid_match = re.search(
@@ -357,11 +476,11 @@ class NodeScorer:
         return None
     
     def calculate_score(self, node: str) -> int:
-        """Вычисляет оценку ноды"""
+        """Вычисляет оценку с учетом расширенной валидации"""
         score = 0
         n_l = node.lower()
         
-        # Базовая репутация
+        # Репутация
         node_hash = get_node_hash(node)
         rep_count = self.reputation.get_count(node_hash)
         score += rep_count * 50
@@ -369,31 +488,21 @@ class NodeScorer:
         # Протокол
         protocol = extract_protocol(node)
         
-        # Hysteria2 - высший приоритет
         if protocol == 'hysteria2':
             score += 600
-        
-        # VLESS Reality/Vision
-        if protocol == 'vless':
+        elif protocol == 'vless':
             if 'flow=xtls-rprx-vision' in n_l:
                 score += 500
             elif 'reality' in n_l:
                 score += 400
             else:
                 score += 200
-        
-        # TUIC
-        if protocol == 'tuic':
+        elif protocol == 'tuic':
             score += 450
+        elif protocol == 'trojan':
+            score += 150 if 'reality' not in n_l else 350
         
-        # Trojan
-        if protocol == 'trojan':
-            if 'reality' in n_l:
-                score += 350
-            else:
-                score += 150
-        
-        # Современные транспорты
+        # Транспорты
         if 'type=grpc' in n_l:
             score += 100
         if 'type=ws' in n_l:
@@ -402,37 +511,70 @@ class NodeScorer:
         # Порты
         host_port = extract_host_port(node)
         if host_port:
-            _, port = host_port
+            host, port = host_port
+            
+            # Проверка валидности
+            if not self.validator.validate_port(port):
+                score -= 500
+            
+            # Подозрительные порты
+            if str(port) in SUSPICIOUS_PORTS:
+                score -= 200
+            
+            # Элитные порты
             if str(port) in ELITE_PORTS:
                 score += 250
             elif port == 443:
                 score += 100
+            
+            # IP валидация
+            if self.validator.validate_ip(host):
+                # Проверка VPN сетей
+                if self.validator.is_in_vpn_network(host):
+                    score -= 150
+                
+                # Редкие IP бонус
+                ip_freq = self.ip_counter.get(host, 0)
+                if ip_freq == 1:
+                    score += 100
+                elif ip_freq <= 3:
+                    score += 50
+            
+            # Домен валидация
+            elif self.validator.validate_domain(host):
+                domain_info = self.validator.analyze_domain(host)
+                
+                # Бонус за поддомены
+                if domain_info['is_subdomain']:
+                    score += 80
+                
+                # Бонус за глубокие поддомены
+                if domain_info['levels'] >= 4:
+                    score += 50
         
         # SNI анализ
         sni = extract_sni(node)
         if sni:
-            # Черный список
             if any(black in sni for black in BLACK_SNI):
                 score -= 2000
             
-            # Элитные SNI
             if any(elite in sni for elite in ULTRA_ELITE_SNI):
                 score += 300
             
-            # Целевые SNI
             if any(target == sni or sni.endswith('.' + target) for target in TARGET_SNI):
                 score += 200
             
-            # Редкие SNI
             sni_freq = self.sni_counter.get(sni, 0)
             if sni_freq <= 5:
                 score += 100
             
-            # Поддомены
-            if sni.count('.') >= 3 or any(sub in sni for sub in ['st.', 'api.', 'cdn.', 'disk.']):
-                score += 80
+            # Домен анализ SNI
+            if self.validator.validate_domain(sni):
+                sni_info = self.validator.analyze_domain(sni)
+                if sni_info['levels'] >= 3:
+                    score += 80
         
-        # UUID частота
+        # UUID редкость
         uuid = self._extract_uuid(node)
         if uuid:
             uuid_freq = self.uuid_counter.get(uuid, 0)
@@ -440,49 +582,38 @@ class NodeScorer:
                 score += 150
             elif uuid_freq >= 5:
                 score += 80
-            elif uuid_freq >= 2:
-                score += 30
+            elif uuid_freq == 1:
+                score += 100  # Уникальный UUID
         
         # ALPN
-        if 'alpn=h3' in n_l or 'alpn=h3-29' in n_l:
+        if 'alpn=h3' in n_l:
             score += 60
         elif 'alpn=h2' in n_l:
             score += 30
         
-        # Fingerprint разнообразие
+        # Fingerprint
         if any(fp in n_l for fp in ['fp=safari', 'fp=ios', 'fp=firefox', 'fp=edge']):
             score += 50
         
         return max(score, 0)
     
     def get_tier(self, score: int, protocol: str) -> int:
-        """Определяет тир ноды"""
-        # Tier 1: Hysteria2/Reality с высоким скором
-        if protocol in ['hysteria2', 'tuic']:
-            if score >= 500:
-                return 1
-        
-        if protocol == 'vless' and ('reality' in protocol or 'vision' in protocol):
-            if score >= 400:
-                return 1
-        
-        # Tier 2: остальные живые
+        """Определяет тир"""
+        if protocol in ['hysteria2', 'tuic'] and score >= 500:
+            return 1
+        if protocol == 'vless' and score >= 400:
+            return 1
         if score >= 150:
             return 2
-        
-        # Tier 3: низкое качество
         return 3
-
-# ============================================================================
-# ФИЛЬТРАЦИЯ И ВАЛИДАЦИЯ
-# ============================================================================
-
-class NodeFilter:
-    """Фильтрация и валидация нод"""
+class EnhancedNodeFilter:
+    """Расширенная фильтрация с дополнительными проверками"""
     
-    @staticmethod
-    def is_valid_protocol(node: str) -> bool:
-        """Проверяет, разрешен ли протокол"""
+    def __init__(self):
+        self.validator = EnhancedValidator()
+    
+    def is_valid_protocol(self, node: str) -> bool:
+        """Проверяет протокол"""
         protocol = extract_protocol(node)
         
         if protocol == 'ss':
@@ -490,36 +621,51 @@ class NodeFilter:
         
         return protocol in ALLOWED_PROTOCOLS
     
-    @staticmethod
-    def is_blacklisted(node: str) -> bool:
-        """Проверяет черный список"""
-        # Проверка мусорных адресов
+    def is_blacklisted(self, node: str) -> bool:
+        """Проверяет черные списки"""
+        # Мусорные адреса
         if any(trash in node for trash in ["0.0.0.0", "127.0.0.1", "localhost"]):
             return True
         
-        # Проверка хоста
+        # Хост
         host_port = extract_host_port(node)
         if host_port:
-            host, _ = host_port
+            host, port = host_port
+            
+            # ASN blacklist
             if is_blacklisted_host(host):
                 return True
+            
+            # Валидация IP
+            if self.validator.validate_ip(host):
+                # VPN сети (опционально, можно отключить)
+                # if self.validator.is_in_vpn_network(host):
+                #     return True
+                pass
+            # Валидация домена
+            elif not self.validator.validate_domain(host):
+                return True
+            
+            # Подозрительные порты
+            if str(port) in SUSPICIOUS_PORTS:
+                return True
         
-        # Проверка SNI
+        # SNI
         sni = extract_sni(node)
-        if sni and any(black in sni for black in BLACK_SNI):
-            return True
+        if sni:
+            if any(black in sni for black in BLACK_SNI):
+                return True
+            if not self.validator.validate_domain(sni):
+                return True
         
         return False
     
-    @staticmethod
-    def clean_node(node: str) -> str:
-        """Очищает ноду, убирая только комментарий"""
-        # Убираем только тег после #
+    def clean_node(self, node: str) -> str:
+        """Очищает ноду (убираем только тег)"""
         return node.split('#')[0]
     
-    @staticmethod
-    def deduplicate_key(node: str) -> str:
-        """Генерирует ключ для дедупликации: protocol:ip:port"""
+    def deduplicate_key(self, node: str) -> str:
+        """Ключ дедупликации"""
         try:
             protocol = extract_protocol(node)
             host_port = extract_host_port(node)
@@ -530,15 +676,13 @@ class NodeFilter:
         except:
             pass
         
-        # Фоллбэк на хеш
         return get_node_hash(node)
     
-    @staticmethod
-    def parse_nodes_from_text(text: str) -> List[str]:
-        """Парсит ноды из текста"""
+    def parse_nodes_from_text(self, text: str) -> List[str]:
+        """Парсит ноды с улучшенной обработкой"""
         nodes = []
         
-        # Попытка декодировать base64
+        # Base64 декодирование
         if "://" not in text[:100]:
             try:
                 decoded = base64.b64decode(text).decode('utf-8', errors='ignore')
@@ -546,91 +690,138 @@ class NodeFilter:
             except:
                 pass
         
-        # Извлекаем строки с протоколами
+        # Извлечение строк
         for line in text.splitlines():
             line = line.strip()
-            if not line or line.startswith(('/', '#', ';')):
+            if not line or line.startswith(('/', '#', ';', '//')):
                 continue
             
-            # Проверяем наличие протокола
+            # Проверка протокола
             if any(proto in line for proto in ['://', 'ss://', 'vless://', 'trojan://', 'hysteria2://', 'tuic://']):
+                # Дополнительная очистка
+                line = line.replace('\x00', '').replace('\r', '')
                 nodes.append(line)
         
         return nodes
+    
+    def validate_node_structure(self, node: str) -> bool:
+        """Проверяет структуру ноды"""
+        try:
+            # Базовая проверка URL
+            if HAS_VALIDATORS:
+                base_node = node.split('#')[0]
+                if not validators.url(base_node):
+                    return False
+            
+            # Проверка наличия обязательных частей
+            host_port = extract_host_port(node)
+            if not host_port:
+                return False
+            
+            host, port = host_port
+            
+            # Проверка хоста и порта
+            if not host or not self.validator.validate_port(port):
+                return False
+            
+            return True
+        except:
+            return False
 
 # ============================================================================
-# АСИНХРОННАЯ ПРОВЕРКА TCP
+# ASYNC TCP CHECKER
 # ============================================================================
 
 class AsyncTCPChecker:
-    """Асинхронная проверка доступности TCP портов"""
+    """Асинхронная проверка TCP с расширенными метриками"""
     
     def __init__(self, timeout: float = TCP_CONNECT_TIMEOUT, max_concurrent: int = MAX_CONCURRENT_CHECKS):
         self.timeout = timeout
         self.semaphore = asyncio.Semaphore(max_concurrent)
         self.results = {}
+        self.metrics = {
+            'checked': 0,
+            'alive': 0,
+            'dead': 0,
+            'errors': 0
+        }
     
-    async def check_port(self, host: str, port: int) -> bool:
-        """Проверяет доступность порта"""
+    async def check_port(self, host: str, port: int) -> Tuple[bool, Optional[float]]:
+        """Проверяет порт и возвращает время отклика"""
         async with self.semaphore:
             try:
-                # Попытка подключения
+                start = time.time()
                 conn = asyncio.open_connection(host, port)
                 reader, writer = await asyncio.wait_for(conn, timeout=self.timeout)
+                elapsed = time.time() - start
                 
-                # Закрываем соединение
                 writer.close()
                 await writer.wait_closed()
                 
-                return True
+                self.metrics['alive'] += 1
+                return (True, elapsed)
             
             except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
-                return False
-            except Exception as e:
-                # Логируем неожиданные ошибки
-                # print(f"Неожиданная ошибка при проверке {host}:{port}: {e}")
-                return False
+                self.metrics['dead'] += 1
+                return (False, None)
+            except Exception:
+                self.metrics['errors'] += 1
+                return (False, None)
+            finally:
+                self.metrics['checked'] += 1
     
-    async def check_node(self, node: str) -> Tuple[str, bool]:
+    async def check_node(self, node: str) -> Tuple[str, bool, Optional[float]]:
         """Проверяет ноду"""
         host_port = extract_host_port(node)
         
         if not host_port:
-            return (node, False)
+            return (node, False, None)
         
         host, port = host_port
         
-        # Кэш результатов
+        # Кэш
         cache_key = f"{host}:{port}"
         if cache_key in self.results:
-            return (node, self.results[cache_key])
+            is_alive, latency = self.results[cache_key]
+            return (node, is_alive, latency)
         
         # Проверка
-        is_alive = await self.check_port(host, port)
-        self.results[cache_key] = is_alive
+        is_alive, latency = await self.check_port(host, port)
+        self.results[cache_key] = (is_alive, latency)
         
-        return (node, is_alive)
+        return (node, is_alive, latency)
     
-    async def check_batch(self, nodes: List[str]) -> List[str]:
-        """Проверяет batch нод"""
+    async def check_batch(self, nodes: List[str]) -> List[Tuple[str, float]]:
+        """Проверяет batch и возвращает живые ноды с latency"""
         tasks = [self.check_node(node) for node in nodes]
         results = await asyncio.gather(*tasks)
         
-        # Возвращаем только живые ноды
-        alive_nodes = [node for node, is_alive in results if is_alive]
+        alive_nodes = [
+            (node, latency) for node, is_alive, latency in results 
+            if is_alive
+        ]
         
         return alive_nodes
+    
+    def get_metrics(self) -> Dict:
+        """Возвращает метрики проверки"""
+        return self.metrics.copy()
 
 # ============================================================================
-# АСИНХРОННЫЙ ЗАГРУЗЧИК
+# ASYNC DOWNLOADER
 # ============================================================================
 
 class AsyncDownloader:
-    """Асинхронная загрузка конфигураций"""
+    """Асинхронная загрузка с расширенными возможностями"""
     
     def __init__(self, timeout: int = HTTP_TIMEOUT):
         self.timeout = aiohttp.ClientTimeout(total=timeout)
         self.user_agent_idx = 0
+        self.metrics = {
+            'success': 0,
+            'failed': 0,
+            'timeout': 0
+        }
     
     def _get_user_agent(self) -> str:
         """Ротация User-Agent"""
@@ -638,51 +829,85 @@ class AsyncDownloader:
         self.user_agent_idx = (self.user_agent_idx + 1) % len(USER_AGENTS)
         return ua
     
-    async def fetch(self, session: aiohttp.ClientSession, url: str) -> str:
-        """Загружает один источник"""
+    async def fetch(self, session: aiohttp.ClientSession, url: str) -> Tuple[str, str]:
+        """Загружает источник"""
         try:
-            headers = {'User-Agent': self._get_user_agent()}
+            headers = {
+                'User-Agent': self._get_user_agent(),
+                'Accept': '*/*',
+                'Accept-Encoding': 'gzip, deflate'
+            }
+            
             async with session.get(url, headers=headers, timeout=self.timeout) as response:
                 if response.status == 200:
-                    return await response.text()
+                    content = await response.text()
+                    self.metrics['success'] += 1
+                    return (url, content)
                 else:
-                    print(f"⚠️ {url[:60]}... -> HTTP {response.status}")
-                    return ""
+                    self.metrics['failed'] += 1
+                    return (url, "")
+        
         except asyncio.TimeoutError:
-            print(f"⏱️ Таймаут: {url[:60]}...")
-            return ""
-        except Exception as e:
-            print(f"❌ Ошибка: {url[:60]}... -> {str(e)[:50]}")
-            return ""
+            self.metrics['timeout'] += 1
+            return (url, "")
+        except Exception:
+            self.metrics['failed'] += 1
+            return (url, "")
     
-    async def fetch_all(self, urls: List[str]) -> List[str]:
+    async def fetch_all(self, urls: List[str]) -> List[Tuple[str, str]]:
         """Загружает все источники"""
         async with aiohttp.ClientSession() as session:
             tasks = [self.fetch(session, url) for url in urls]
             results = await asyncio.gather(*tasks)
             return results
-class ProxyAggregator:
-    """Главный класс агрегатора"""
+    
+    def get_metrics(self) -> Dict:
+        """Метрики загрузки"""
+        return self.metrics.copy()
+
+# ============================================================================
+# ГЛАВНЫЙ АГРЕГАТОР
+# ============================================================================
+
+class EnhancedProxyAggregator:
+    """Расширенный агрегатор с полезными библиотеками"""
     
     def __init__(self):
         self.reputation = ReputationManager()
         self.scorer = NodeScorer(self.reputation)
-        self.filter = NodeFilter()
+        self.filter = EnhancedNodeFilter()
         self.downloader = AsyncDownloader()
         self.checker = AsyncTCPChecker()
         
         self.raw_nodes: List[str] = []
         self.filtered_nodes: List[Dict] = []
         self.checked_nodes: List[Dict] = []
+        
+        # Печать доступных библиотек
+        self._print_available_libraries()
+    
+    def _print_available_libraries(self):
+        """Выводит информацию о доступных библиотеках"""
+        print("📚 Доступные библиотеки:")
+        libs = {
+            'pycountry': HAS_PYCOUNTRY,
+            'validators': HAS_VALIDATORS,
+            'tldextract': HAS_TLDEXTRACT,
+            'ipaddress': HAS_IPADDRESS
+        }
+        
+        for lib, available in libs.items():
+            status = "✅" if available else "❌"
+            print(f"  {status} {lib}")
     
     async def download_sources(self):
-        """Скачивает все источники"""
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] 📥 Загрузка источников...")
+        """Загрузка источников"""
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 📥 Загрузка источников...")
         
         results = await self.downloader.fetch_all(SOURCES)
         
         total_nodes = 0
-        for idx, content in enumerate(results):
+        for url, content in results:
             if not content:
                 continue
             
@@ -691,74 +916,79 @@ class ProxyAggregator:
             total_nodes += len(nodes)
             
             if len(nodes) > 0:
-                print(f"  ✓ Источник {idx+1}: {len(nodes)} нод")
+                url_short = url.split('/')[-1][:30]
+                print(f"  ✓ {url_short}: {len(nodes)} нод")
         
+        dl_metrics = self.downloader.get_metrics()
+        print(f"📊 Загрузка: успешно={dl_metrics['success']}, "
+              f"ошибки={dl_metrics['failed']}, таймауты={dl_metrics['timeout']}")
         print(f"📊 Всего загружено: {total_nodes} нод")
     
     def filter_and_deduplicate(self):
-        """Фильтрует и дедуплицирует ноды"""
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔍 Фильтрация и дедупликация...")
+        """Фильтрация с расширенной валидацией"""
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🔍 Расширенная фильтрация...")
         
-        # Словарь для дедупликации
         unique_map: Dict[str, Dict] = {}
         
-        processed = 0
-        filtered_out = {
+        stats = {
             'blacklist': 0,
             'protocol': 0,
+            'structure': 0,
             'duplicate': 0
         }
         
+        processed = 0
         for node in self.raw_nodes:
             processed += 1
             
             if processed % 5000 == 0:
-                print(f"  🔄 Обработано {processed}/{len(self.raw_nodes)}")
+                print(f"  🔄 {processed}/{len(self.raw_nodes)}")
             
-            # Очистка
             clean_node = self.filter.clean_node(node)
             
-            # Проверка черного списка
-            if self.filter.is_blacklisted(clean_node):
-                filtered_out['blacklist'] += 1
+            # Проверка структуры
+            if not self.filter.validate_node_structure(clean_node):
+                stats['structure'] += 1
                 continue
             
-            # Проверка протокола
+            # Черный список
+            if self.filter.is_blacklisted(clean_node):
+                stats['blacklist'] += 1
+                continue
+            
+            # Протокол
             if not self.filter.is_valid_protocol(clean_node):
-                filtered_out['protocol'] += 1
+                stats['protocol'] += 1
                 continue
             
             # Дедупликация
             dedup_key = self.filter.deduplicate_key(clean_node)
             
             if dedup_key in unique_map:
-                filtered_out['duplicate'] += 1
+                stats['duplicate'] += 1
                 continue
             
-            # Сохраняем
             protocol = extract_protocol(clean_node)
             unique_map[dedup_key] = {
                 'node': clean_node,
                 'protocol': protocol,
-                'original': node  # Сохраняем оригинал с тегом
+                'original': node
             }
         
-        # Конвертируем в список
         self.filtered_nodes = list(unique_map.values())
         
         print(f"✅ Уникальных нод: {len(self.filtered_nodes)}")
-        print(f"  📛 Фильтры: blacklist={filtered_out['blacklist']}, "
-              f"protocol={filtered_out['protocol']}, duplicate={filtered_out['duplicate']}")
+        print(f"  📛 Отфильтровано: blacklist={stats['blacklist']}, "
+              f"protocol={stats['protocol']}, structure={stats['structure']}, "
+              f"duplicate={stats['duplicate']}")
     
     def calculate_scores(self):
-        """Вычисляет оценки для нод"""
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] 📊 Расчет оценок...")
+        """Расчет оценок"""
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 📊 Расчет оценок...")
         
-        # Обновляем статистику
         nodes_list = [n['node'] for n in self.filtered_nodes]
         self.scorer.update_statistics(nodes_list)
         
-        # Вычисляем оценки
         for node_data in self.filtered_nodes:
             node = node_data['node']
             score = self.scorer.calculate_score(node)
@@ -767,49 +997,51 @@ class ProxyAggregator:
             node_data['score'] = score
             node_data['tier'] = tier
         
-        # Сортируем по оценке
         self.filtered_nodes.sort(key=lambda x: x['score'], reverse=True)
         
         print(f"✅ Оценки рассчитаны")
     
     async def check_nodes(self):
-        """Проверяет доступность нод"""
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔌 Проверка доступности...")
+        """Проверка доступности"""
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🔌 TCP проверка...")
         
-        # Берем топ-5000 для проверки
         nodes_to_check = self.filtered_nodes[:MAX_NODES_TO_CHECK]
         nodes_list = [n['node'] for n in nodes_to_check]
         
-        print(f"  📡 Проверка {len(nodes_list)} нод (timeout={TCP_CONNECT_TIMEOUT}s)...")
+        print(f"  📡 Проверка {len(nodes_list)} нод...")
         
-        # Асинхронная проверка
-        alive_nodes = await self.checker.check_batch(nodes_list)
-        alive_set = set(alive_nodes)
+        alive_results = await self.checker.check_batch(nodes_list)
+        alive_map = {node: latency for node, latency in alive_results}
         
-        # Фильтруем живые
+        # Добавляем latency к данным
+        for node_data in self.filtered_nodes:
+            if node_data['node'] in alive_map:
+                node_data['latency'] = alive_map[node_data['node']]
+                node_data['alive'] = True
+            else:
+                node_data['latency'] = None
+                node_data['alive'] = False
+        
+        # Фильтруем живые + непроверенные
         self.checked_nodes = [
             n for n in self.filtered_nodes 
-            if n['node'] in alive_set or self.filtered_nodes.index(n) >= MAX_NODES_TO_CHECK
+            if n.get('alive', True)  # True для непроверенных
         ]
         
-        alive_count = len(alive_nodes)
-        dead_count = len(nodes_list) - alive_count
-        
-        print(f"✅ Живых: {alive_count} | ❌ Мертвых: {dead_count}")
-        print(f"📊 Итого нод после проверки: {len(self.checked_nodes)}")
+        metrics = self.checker.get_metrics()
+        print(f"✅ Проверка завершена: живых={metrics['alive']}, "
+              f"мертвых={metrics['dead']}, ошибок={metrics['errors']}")
+        print(f"📊 Итого нод: {len(self.checked_nodes)}")
     
     def update_reputation(self):
-        """Обновляет репутацию"""
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Обновление репутации...")
+        """Обновление репутации"""
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 💾 Обновление репутации...")
         
         for node_data in self.checked_nodes:
             node_hash = get_node_hash(node_data['node'])
             self.reputation.update(node_hash)
         
-        # Очистка старых записей
         self.reputation.cleanup()
-        
-        # Сохранение
         self.reputation.save()
         
         print(f"✅ Репутация обновлена ({len(self.reputation.reputation)} записей)")
@@ -819,183 +1051,115 @@ class ProxyAggregator:
         protocol = node_data['protocol'].upper()
         score = node_data['score']
         tier = node_data['tier']
+        latency = node_data.get('latency')
         
-        # Определяем качество
-        if tier == 1:
-            quality = "ELITE"
-        elif tier == 2:
-            quality = "PREMIUM"
-        else:
-            quality = "STANDARD"
+        quality = ["BASIC", "STANDARD", "PREMIUM", "ELITE"][min(tier, 3)]
         
-        # Получаем репутацию
         node_hash = get_node_hash(node_data['node'])
         rep_count = self.reputation.get_count(node_hash)
         
-        # Формируем имя
-        name = f"[{protocol}] {index:04d} | T{tier} {quality} | REP:{rep_count} | SCORE:{score}"
+        latency_str = f" | {int(latency*1000)}ms" if latency else ""
+        
+        name = f"[{protocol}] {index:04d} | T{tier} {quality} | REP:{rep_count}{latency_str}"
         
         return name
     
     def save_results(self):
-        """Сохраняет результаты в файлы"""
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение результатов...")
+        """Сохранение результатов"""
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение...")
         
-        # Разделяем по категориям
-        tier1_nodes = []
-        tier2_nodes = []
-        ss_nodes = []
-        all_nodes = []
+        tier1, tier2, ss_nodes, all_nodes = [], [], [], []
         
         for idx, node_data in enumerate(self.checked_nodes):
             node = node_data['node']
             protocol = node_data['protocol']
             tier = node_data['tier']
             
-            # Генерируем имя
             name = self.generate_server_name(node_data, idx + 1)
             full_node = f"{node}#{name}"
             
-            # Распределяем по категориям
             all_nodes.append(full_node)
             
             if protocol == 'ss':
                 ss_nodes.append(full_node)
             else:
                 if tier == 1:
-                    tier1_nodes.append(full_node)
+                    tier1.append(full_node)
                 elif tier == 2:
-                    tier2_nodes.append(full_node)
+                    tier2.append(full_node)
         
-        # Сохраняем файлы
-        files_saved = {}
+        # Сохранение
+        files = {
+            'ultra_elite.txt': tier1[:1000],
+            'hard_hidden.txt': tier1[:500],
+            'business.txt': tier1[:500],
+            'mob.txt': (tier1 + tier2)[:1000],
+            'med.txt': tier2[:2000],
+            'vls.txt': [n for n in all_nodes if not n.startswith('ss://')],
+            'vless_vmess.txt': [n for n in all_nodes if not n.startswith('ss://')],
+            'ss.txt': ss_nodes[:2000],
+            'all.txt': all_nodes[:25000],
+            'sub.txt': all_nodes[:25000],
+            'all_configs.txt': all_nodes[:25000]
+        }
         
-        # ultra_elite.txt (Tier 1)
-        self._save_file('ultra_elite.txt', tier1_nodes[:1000])
-        files_saved['ultra_elite.txt'] = min(len(tier1_nodes), 1000)
-        
-        # hard_hidden.txt (Tier 1, топ-500)
-        self._save_file('hard_hidden.txt', tier1_nodes[:500])
-        files_saved['hard_hidden.txt'] = min(len(tier1_nodes), 500)
-        
-        # business.txt (копия hard_hidden)
-        self._save_file('business.txt', tier1_nodes[:500])
-        files_saved['business.txt'] = min(len(tier1_nodes), 500)
-        
-        # mob.txt (Tier 1+2, топ-1000)
-        mobile_nodes = tier1_nodes + tier2_nodes
-        self._save_file('mob.txt', mobile_nodes[:1000])
-        files_saved['mob.txt'] = min(len(mobile_nodes), 1000)
-        
-        # med.txt (Tier 2, топ-2000)
-        self._save_file('med.txt', tier2_nodes[:2000])
-        files_saved['med.txt'] = min(len(tier2_nodes), 2000)
-        
-        # vls.txt (все VLESS/Trojan/Hysteria/TUIC)
-        non_ss = [n for n in all_nodes if not n.startswith('ss://')]
-        self._save_file('vls.txt', non_ss)
-        files_saved['vls.txt'] = len(non_ss)
-        
-        # vless_vmess.txt (копия vls)
-        self._save_file('vless_vmess.txt', non_ss)
-        files_saved['vless_vmess.txt'] = len(non_ss)
-        
-        # ss.txt (Shadowsocks)
-        self._save_file('ss.txt', ss_nodes[:2000])
-        files_saved['ss.txt'] = min(len(ss_nodes), 2000)
-        
-        # all.txt (все ноды)
-        self._save_file('all.txt', all_nodes[:25000])
-        files_saved['all.txt'] = min(len(all_nodes), 25000)
-        
-        # sub.txt (копия all)
-        self._save_file('sub.txt', all_nodes[:25000])
-        files_saved['sub.txt'] = min(len(all_nodes), 25000)
-        
-        # all_configs.txt (копия all)
-        self._save_file('all_configs.txt', all_nodes[:25000])
-        files_saved['all_configs.txt'] = min(len(all_nodes), 25000)
-        
-        print("✅ Файлы сохранены:")
-        for filename, count in files_saved.items():
-            print(f"  📄 {filename}: {count} нод")
+        for filename, nodes in files.items():
+            self._save_file(filename, nodes)
+            print(f"  📄 {filename}: {len(nodes)}")
     
     def _save_file(self, filename: str, nodes: List[str]):
-        """Вспомогательная функция сохранения файла"""
+        """Сохранение файла"""
         try:
-            if not nodes:
-                # Создаем пустой файл
-                with open(filename, 'w', encoding='utf-8') as f:
-                    pass
-                return
-            
             with open(filename, 'w', encoding='utf-8') as f:
-                f.write('\n'.join(nodes))
+                if nodes:
+                    f.write('\n'.join(nodes))
         except Exception as e:
-            print(f"❌ Ошибка сохранения {filename}: {e}")
+            print(f"❌ {filename}: {e}")
     
     async def run(self):
-        """Главный метод запуска"""
-        start_time = time.time()
+        """Главный запуск"""
+        start = time.time()
         
         print("=" * 70)
-        print("🚀 АСИНХРОННЫЙ ПРОКСИ-АГРЕГАТОР")
+        print("🚀 РАСШИРЕННЫЙ АСИНХРОННЫЙ АГРЕГАТОР")
         print("=" * 70)
         
-        # 1. Загрузка источников
         await self.download_sources()
-        
-        # 2. Фильтрация и дедупликация
         self.filter_and_deduplicate()
-        
-        # 3. Расчет оценок
         self.calculate_scores()
-        
-        # 4. Проверка доступности
         await self.check_nodes()
-        
-        # 5. Обновление репутации
         self.update_reputation()
-        
-        # 6. Сохранение результатов
         self.save_results()
         
-        elapsed = time.time() - start_time
+        elapsed = time.time() - start
         
-        print("=" * 70)
+        print("\n" + "=" * 70)
         print(f"✅ ЗАВЕРШЕНО за {elapsed:.1f}s")
         print(f"📊 Статистика:")
-        print(f"  - Загружено: {len(self.raw_nodes)} нод")
-        print(f"  - После фильтрации: {len(self.filtered_nodes)} нод")
-        print(f"  - После проверки: {len(self.checked_nodes)} нод")
+        print(f"  - Загружено: {len(self.raw_nodes)}")
+        print(f"  - Отфильтровано: {len(self.filtered_nodes)}")
+        print(f"  - Итого: {len(self.checked_nodes)}")
         
-        # Статистика по протоколам
-        protocol_stats = {}
-        for node_data in self.checked_nodes:
-            proto = node_data['protocol']
-            protocol_stats[proto] = protocol_stats.get(proto, 0) + 1
+        proto_stats = {}
+        for n in self.checked_nodes:
+            p = n['protocol']
+            proto_stats[p] = proto_stats.get(p, 0) + 1
         
-        print(f"  - По протоколам:")
-        for proto, count in sorted(protocol_stats.items(), key=lambda x: x[1], reverse=True):
-            print(f"    • {proto.upper()}: {count}")
-        
+        print(f"  - Протоколы:")
+        for p, c in sorted(proto_stats.items(), key=lambda x: x[1], reverse=True):
+            print(f"    • {p.upper()}: {c}")
         print("=" * 70)
 
-# ============================================================================
-# ТОЧКА ВХОДА
-# ============================================================================
-
 async def main():
-    """Главная функция"""
-    aggregator = ProxyAggregator()
+    aggregator = EnhancedProxyAggregator()
     await aggregator.run()
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n⚠️ Прервано пользователем")
+        print("\n⚠️ Прервано")
     except Exception as e:
-        print(f"\n❌ Критическая ошибка: {e}")
+        print(f"\n❌ Ошибка: {e}")
         import traceback
         traceback.print_exc() 
