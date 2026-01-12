@@ -98,6 +98,7 @@ urls = [
     "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
     "https://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt",
     "https://etoneya.a9fm.site/1",
+    "https://bp.wl.free.nf/confs/merged.txt", 
     "https://raw.githubusercontent.com/V2RAYCONFIGSPOOL/V2RAY_SUB/refs/heads/main/v2ray_configs_no1.txt", 
     "https://raw.githubusercontent.com/V2RAYCONFIGSPOOL/V2RAY_SUB/refs/heads/main/v2ray_configs_no2.txt", 
     "https://bp.wl.free.nf/confs/wl.txt",
@@ -121,6 +122,9 @@ urls = [
     "https://fsub.flux.2bd.net/githubmirror/split-by-protocols/hy2.txt",
     "http://livpn.atwebpages.com/sub.php?token=c829c20769d2112b", 
     "https://sub-aggregator.vercel.app/",
+    "https://raw.githubusercontent.com/V2RAYCONFIGSPOOL/V2RAY_SUB/refs/heads/main/v2ray_configs_no1.txt", 
+    "https://raw.githubusercontent.com/V2RAYCONFIGSPOOL/V2RAY_SUB/refs/heads/main/v2ray_configs_no2.txt", 
+    "https://raw.githubusercontent.com/whoahaow/rjsxrd/refs/heads/main/githubmirror/split-by-protocols/vless-secure.txt", 
     "https://s3c3.001.gpucloud.ru/dixsm/htxml",
     "https://shz.al/YjSPQaSTpHYNakFnE2ddjcCK:/~@sorenab1,/VIESS,subSOREN#VIESS,subSOREN", 
     "https://s3c3.001.gpucloud.ru/rtrq/jsoxn", 
@@ -917,4 +921,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
