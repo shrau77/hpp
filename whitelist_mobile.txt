@@ -1,4 +1,5 @@
 vless://405ec164-7923-4d76-8be5-7ae96e444f4e@62.60.246.188:443?encryption=none&flow=xtls-rprx-vision&security=reality&sni=web.max.ru&fp=chrome&pbk=o3H8CUivdt6lbFH6S7CQZ6dua7nUg5rYtPdSyXpjpx0&sid=6104c5e9613ea56c&type=tcp&headerType=none#%40mobilesignal
+vless://8f654717-4009-4417-af5a-8b9bf7853e79@delilah.ns.cloudflare.com:443?encryption=none&security=tls&sni=639034354143079886.defender-amsjs.info&insecure=0&allowInsecure=0&type=ws&host=639034354143079886.defender-amsjs.info&path=%2Fyirpvnws#%F0%9F%87%B1%F0%9F%87%BA%5B%40mobilesignal%5D%20vless-LU
 vless://25efc727-e853-49ba-9609-3c20009d0e7a@104.18.13.229:2052?encryption=none&security=none&type=ws&host=winbiss-0tpka6-v1.winbiss.workers.dev&path=%2F%3Fed%3D2560#%F0%9F%8C%90%7CUN%7C%40mobilesignal
 vless://telegram-turboo-server@server.ultra-irancell.com:80?encryption=none&security=none&type=ws&host=jone-turboo-server.com&path=%2Fed%3D2056#%F0%9F%87%AE%F0%9F%87%B9%7CIT%7C%40mobilesignal
 vless://27a351f2-63c3-4ca6-8e11-034bccc64549@v22.vipshopkar8.shop:8412?encryption=none&security=none&type=tcp&headerType=none#%F0%9F%87%AE%F0%9F%87%B7%7CIR%7C%40mobilesignal```
