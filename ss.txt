@@ -1,0 +1,1 @@
+ss://c5c9d8ec-6c95-4f84-a395-de41ef895f34@usa03.abvpn.net:443/?type=tcp&amp;encryption=none&amp;flow=&amp;sni=mirror.yandex.ru&amp;fp=firefox&amp;security=reality&amp;pbk=J0_Stw7IIr6naIGCtZ1ZB75HfD-KIITZMy84jQVufyU&amp;sid=7b#[SS] 4966 | 🌐 UN | T3 | REP:0 | 1457ms HPP STANDARD
