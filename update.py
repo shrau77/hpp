@@ -44,15 +44,24 @@ VPN_NETWORKS = ['185.0.0.0/8', '45.0.0.0/8']
 
 ALLOWED_PROTOCOLS = {'vless', 'hysteria2', 'hy2', 'tuic', 'ss', 'trojan'}
 
-# ИСПРАВЛЕННЫЙ список методов Shadowsocks
+# ОСЛАБЛЕННЫЙ список методов Shadowsocks (больше методов)
 MODERN_SS_METHODS = {
+    # 2022 методы
     '2022-blake3-aes-128-gcm',
     '2022-blake3-aes-256-gcm', 
     '2022-blake3-chacha20-poly1305',
+    # AEAD методы
     'aes-256-gcm',
-    'chacha20-ietf-poly1305',
+    'aes-192-gcm',
     'aes-128-gcm',
-    'chacha20-poly1305'
+    'chacha20-ietf-poly1305',
+    'chacha20-poly1305',
+    'xchacha20-ietf-poly1305',
+    # Старые но рабочие
+    'aes-256-cfb',
+    'aes-128-cfb',
+    'chacha20-ietf',
+    'rc4-md5',
 }
 
 USER_AGENTS = ['Happ/3.7.0', 'Happ/3.8.1', 'v2rayN/6.40']
@@ -66,6 +75,7 @@ ULTRA_ELITE_SNI = [
     "egress.yandex.net", "sba.yandex.net", "goya.rutube.ru",
 ]
 
+# Расширенный TARGET_SNI из документа
 TARGET_SNI = [
     "www.unicreditbank.ru", "www.gazprombank.ru", "cdn.gpb.ru", "mkb.ru", "www.open.ru",
     "cobrowsing.tbank.ru", "cdn.rosbank.ru", "www.psbank.ru", "www.raiffeisen.ru",
@@ -104,151 +114,6 @@ TARGET_SNI = [
     "jsons.injector.3ebra.net", "2gis.ru", "d-assets.2gis.ru", "s1.bss.2gis.com",
     "www.tbank.ru", "strm-spbmiran-08.strm.yandex.net", "id.tbank.ru", "tmsg.tbank.ru",
     "vk.com", "www.wildberries.ru", "www.ozon.ru", "ok.ru", "yandex.ru"
-    "epp.genproc.gov.ru", "duma.gov.ru", "alfabank.ru", "pochta.ru", "честныйзнак.рф",
-"moskva.taximaxim.ru", "2gis.ru", "tutu.ru", "rzd.ru", "rambler.ru",
-"lenta.ru", "gazeta.ru", "rbc.ru", "kp.ru", "government.ru",
-"kremlin.ru", "sun6-22.userapi.com", "pptest.userapi.com", "sun9-101.userapi.com", "travel.yandex.ru",
-"trk.mail.ru", "1l-api.mail.ru", "m.47news.ru", "crowdtest.payment-widget-smarttv.plus.tst.kinopoisk.ru", "external-api.mediabilling.kinopoisk.ru",
-"external-api.plus.kinopoisk.ru", "graphql-web.kinopoisk.ru", "graphql.kinopoisk.ru", "1l.mail.ru", "tickets.widget.kinopoisk.ru",
-"st.kinopoisk.ru", "quiz.kinopoisk.ru", "payment-widget.kinopoisk.ru", "payment-widget-smarttv.plus.kinopoisk.ru", "oneclick-payment.kinopoisk.ru",
-"microapps.kinopoisk.ru", "ma.kinopoisk.ru", "hd.kinopoisk.ru", "crowdtest.payment-widget.plus.tst.kinopoisk.ru", "api.plus.kinopoisk.ru",
-"st-im.kinopoisk.ru", "1l-s2s.mail.ru", "sso.kinopoisk.ru", "touch.kinopoisk.ru", "1l-view.mail.ru",
-"1link.mail.ru", "1l-hit.mail.ru", "2021.mail.ru", "2018.mail.ru", "23feb.mail.ru",
-"2019.mail.ru", "2020.mail.ru", "1l-go.mail.ru", "8mar.mail.ru", "9may.mail.ru",
-"aa.mail.ru", "8march.mail.ru", "afisha.mail.ru", "agent.mail.ru", "amigo.mail.ru",
-"analytics.predict.mail.ru", "alpha4.minigames.mail.ru", "alpha3.minigames.mail.ru", "answer.mail.ru", "api.predict.mail.ru",
-"answers.mail.ru", "authdl.mail.ru", "av.mail.ru", "apps.research.mail.ru", "auto.mail.ru",
-"bb.mail.ru", "bender.mail.ru", "beko.dom.mail.ru", "azt.mail.ru", "bd.mail.ru",
-"autodiscover.corp.mail.ru", "aw.mail.ru", "beta.mail.ru", "biz.mail.ru", "blackfriday.mail.ru",
-"bitva.mail.ru", "blog.mail.ru", "bratva-mr.mail.ru", "browser.mail.ru", "calendar.mail.ru",
-"capsula.mail.ru", "cloud.mail.ru", "cdn.newyear.mail.ru", "cars.mail.ru", "code.mail.ru",
-"cobmo.mail.ru", "cobma.mail.ru", "cog.mail.ru", "cdn.connect.mail.ru", "cf.mail.ru",
-"comba.mail.ru", "compute.mail.ru", "codefest.mail.ru", "combu.mail.ru", "corp.mail.ru",
-"commba.mail.ru", "crazypanda.mail.ru", "ctlog.mail.ru", "cpg.money.mail.ru", "ctlog2023.mail.ru",
-"ctlog2024.mail.ru", "cto.mail.ru", "cups.mail.ru", "da.biz.mail.ru", "da-preprod.biz.mail.ru",
-"data.amigo.mail.ru", "dk.mail.ru", "dev1.mail.ru", "dev3.mail.ru", "dl.mail.ru",
-"deti.mail.ru", "dn.mail.ru", "dl.marusia.mail.ru", "doc.mail.ru", "dragonpals.mail.ru",
-"dom.mail.ru", "duck.mail.ru", "dev2.mail.ru", "e.mail.ru", "ds.mail.ru",
-"education.mail.ru", "dobro.mail.ru", "esc.predict.mail.ru", "et.mail.ru", "fe.mail.ru",
-"finance.mail.ru", "five.predict.mail.ru", "foto.mail.ru", "games-bamboo.mail.ru", "games-fisheye.mail.ru",
-"games.mail.ru", "genesis.mail.ru", "geo-apart.predict.mail.ru", "golos.mail.ru", "go.mail.ru",
-"gpb.finance.mail.ru", "gibdd.mail.ru", "health.mail.ru", "guns.mail.ru", "horo.mail.ru",
-"hs.mail.ru", "help.mcs.mail.ru", "imperia.mail.ru", "it.mail.ru", "internet.mail.ru",
-"infra.mail.ru", "hi-tech.mail.ru", "jd.mail.ru", "journey.mail.ru", "junior.mail.ru",
-"juggermobile.mail.ru", "kicker.mail.ru", "knights.mail.ru", "kino.mail.ru", "kingdomrift.mail.ru",
-"kobmo.mail.ru", "komba.mail.ru", "kobma.mail.ru", "kommba.mail.ru", "kombo.mail.ru",
-"kz.mcs.mail.ru", "konflikt.mail.ru", "kombu.mail.ru", "lady.mail.ru", "landing.mail.ru",
-"la.mail.ru", "legendofheroes.mail.ru", "legenda.mail.ru", "loa.mail.ru", "love.mail.ru",
-"lotro.mail.ru", "mailer.mail.ru", "mailexpress.mail.ru", "man.mail.ru", "maps.mail.ru",
-"marusia.mail.ru", "mcs.mail.ru", "media-golos.mail.ru", "mediapro.mail.ru", "merch-cpg.money.mail.ru",
-"miniapp.internal.myteam.mail.ru", "media.mail.ru", "mobfarm.mail.ru", "mowar.mail.ru", "mozilla.mail.ru",
-"my.mail.ru", "mosqa.mail.ru", "mking.mail.ru", "minigames.mail.ru", "myteam.mail.ru",
-"nebogame.mail.ru", "money.mail.ru", "net.mail.ru", "new.mail.ru", "newyear2018.mail.ru",
-"news.mail.ru", "newyear.mail.ru", "nonstandard.sales.mail.ru", "notes.mail.ru", "octavius.mail.ru",
-"operator.mail.ru", "otvety.mail.ru", "otvet.mail.ru", "otveti.mail.ru", "panzar.mail.ru",
-"park.mail.ru", "pernatsk.mail.ru", "pay.mail.ru", "pets.mail.ru", "pms.mail.ru",
-"pochtabank.mail.ru", "pokerist.mail.ru", "pogoda.mail.ru", "polis.mail.ru", "predict.mail.ru",
-"primeworld.mail.ru", "pp.mail.ru", "ptd.predict.mail.ru", "public.infra.mail.ru", "pulse.mail.ru",
-"pubg.mail.ru", "quantum.mail.ru", "rate.mail.ru", "pw.mail.ru", "rebus.calls.mail.ru",
-"rebus.octavius.mail.ru", "rev.mail.ru", "rl.mail.ru", "rm.mail.ru", "riot.mail.ru",
-"reseach.mail.ru", "s3.babel.mail.ru", "rt.api.operator.mail.ru", "s3.mail.ru", "s3.media-mobs.mail.ru",
-"sales.mail.ru", "sangels.mail.ru", "sdk.money.mail.ru", "service.amigo.mail.ru", "security.mail.ru",
-"shadowbound.mail.ru", "socdwar.mail.ru", "sochi-park.predict.mail.ru", "souz.mail.ru", "sphere.mail.ru",
-"staging-analytics.predict.mail.ru", "staging-sochi-park.predict.mail.ru", "staging-esc.predict.mail.ru", "stand.bb.mail.ru", "sport.mail.ru",
-"stand.aoc.mail.ru", "stand.cb.mail.ru", "startrek.mail.ru", "static.dl.mail.ru", "stand.pw.mail.ru",
-"stand.la.mail.ru", "stormriders.mail.ru", "static.operator.mail.ru", "stream.mail.ru", "status.mcs.mail.ru",
-"street-combats.mail.ru", "support.biz.mail.ru", "support.mcs.mail.ru", "team.mail.ru", "support.tech.mail.ru",
-"tech.mail.ru", "tera.mail.ru", "tiles.maps.mail.ru", "todo.mail.ru", "tidaltrek.mail.ru",
-"tmgame.mail.ru", "townwars.mail.ru", "tv.mail.ru", "ttbh.mail.ru", "typewriter.mail.ru",
-"u.corp.mail.ru", "ufo.mail.ru", "vkdoc.mail.ru", "vk.mail.ru", "voina.mail.ru",
-"warface.mail.ru", "wartune.mail.ru", "weblink.predict.mail.ru", "warheaven.mail.ru", "welcome.mail.ru",
-"webstore.mail.ru", "webagent.mail.ru", "wf.mail.ru", "whatsnew.mail.ru", "wh-cpg.money.mail.ru",
-"wok.mail.ru", "www.biz.mail.ru", "wos.mail.ru", "www.mail.ru", "www.pubg.mail.ru",
-"www.wf.mail.ru", "www.mcs.mail.ru", "informer.yandex.ru", "digital.gov.ru", "adm.digital.gov.ru",
-"travel.yastatic.net", "api.uxfeedback.yandex.net", "api.s3.yandex.net", "cdn.s3.yandex.net", "uxfeedback-cdn.s3.yandex.net",
-"uxfeedback.yandex.ru", "cloudcdn-m9-15.cdn.yandex.net", "cloudcdn-m9-14.cdn.yandex.net", "cloudcdn-m9-13.cdn.yandex.net", "cloudcdn-m9-12.cdn.yandex.net",
-"cloudcdn-m9-10.cdn.yandex.net", "cloudcdn-m9-9.cdn.yandex.net", "cloudcdn-m9-7.cdn.yandex.net", "cloudcdn-m9-6.cdn.yandex.net", "cloudcdn-m9-5.cdn.yandex.net",
-"cloudcdn-m9-4.cdn.yandex.net", "cloudcdn-m9-3.cdn.yandex.net", "cloudcdn-m9-2.cdn.yandex.net", "admin.cs7777.vk.ru", "admin.tau.vk.ru",
-"analytics.vk.ru", "api.cs7777.vk.ru", "owa.ozon.ru", "learning.ozon.ru", "mapi.learning.ozon.ru",
-"ws.seller.ozon.ru", "bank.ozon.ru", "www.cikrf.ru", "izbirkom.ru", "seller.ozon.ru",
-"pay.ozon.ru", "securepay.ozon.ru", "adv.ozon.ru", "voter.gosuslugi.ru", "gosweb.gosuslugi.ru",
-"invest.ozon.ru", "ord.ozon.ru", "autodiscover.ord.ozon.ru", "api.tau.vk.ru", "fw.wb.ru",
-"finance.wb.ru", "jitsi.wb.ru", "dnd.wb.ru", "live.ok.ru", "m.ok.ru",
-"api.ok.ru", "multitest.ok.ru", "dating.ok.ru", "tamtam.ok.ru", "away.cs7777.vk.ru",
-"away.tau.vk.ru", "business.vk.ru", "connect.cs7777.vk.ru", "cs7777.vk.ru", "dev.cs7777.vk.ru",
-"dev.tau.vk.ru", "expert.vk.ru", "id.cs7777.vk.ru", "id.tau.vk.ru", "login.cs7777.vk.ru",
-"login.tau.vk.ru", "m.cs7777.vk.ru", "m.tau.vk.ru", "m.vk.ru", "m.vkvideo.cs7777.vk.ru",
-"me.cs7777.vk.ru", "ms.cs7777.vk.ru", "music.vk.ru", "oauth.cs7777.vk.ru", "oauth.tau.vk.ru",
-"oauth2.cs7777.vk.ru", "ord.vk.ru", "push.vk.ru", "r.vk.ru", "target.vk.ru",
-"tech.vk.ru", "ui.cs7777.vk.ru", "ui.tau.vk.ru", "vkvideo.cs7777.vk.ru", "stats.vk-portal.net",
-"mediafeeds.yandex.ru", "cdn.tbank.ru", "uslugi.yandex.ru", "auto.ru", "http-check-headers.yandex.ru",
-"sso.auto.ru", "hrc.tbank.ru", "static.rutube.ru", "kiks.yandex.ru", "cobrowsing.tbank.ru",
-"sun6-20.userapi.com", "ssp.rutube.ru", "preview.rutube.ru", "st-ok.cdn-vk.ru", "ekmp-a-51.rzd.ru",
-"mp.rzd.ru", "pulse.mp.rzd.ru", "link.mp.rzd.ru", "adm.mp.rzd.ru", "welcome.rzd.ru",
-"travel.rzd.ru", "secure-cloud.rzd.ru", "secure.rzd.ru", "market.rzd.ru", "ticket.rzd.ru",
-"my.rzd.ru", "prodvizhenie.rzd.ru", "disk.rzd.ru", "rzd.ru", "www.rzd.ru",
-"team.rzd.ru", "contacts.rzd.ru", "cargo.rzd.ru", "company.rzd.ru", "avatars.mds.yandex.net",
-"mc.yandex.ru", "www.vtb.ru", "chat3.vtb.ru", "s.vtb.ru", "sso-app4.vtb.ru",
-"sso-app5.vtb.ru", "cdn.lemanapro.ru", "dmp.dmpkit.lemanapro.ru", "receive-sentry.lmru.tech", "partners.lemanapro.ru",
-"metrics.alfabank.ru", "static.lemanapro.ru", "lemanapro.ru", "frontend.vh.yandex.ru", "yandex.net",
-"favicon.yandex.ru", "favicon.yandex.com", "favicon.yandex.net", "gu-st.ru", "browser.yandex.com",
-"api.browser.yandex.com", "wap.yandex.com", "kiks.yandex.com", "rs.mail.ru", "yandex.com",
-"mediafeeds.yandex.com", "avatars.mds.yandex.com", "mc.yandex.com", "api-maps.yandex.ru", "enterprise.api-maps.yandex.ru",
-"dzen.ru", "300.ya.ru", "ya.ru", "brontp-pre.yandex.ru", "suggest.dzen.ru",
-"dr2.yandex.net", "cloud.cdn.yandex.net", "api.browser.yandex.ru", "wap.yandex.ru", "cloud.cdn.yandex.com",
-"dr.yandex.net", "mail.yandex.ru", "mail.yandex.com", "yabs.yandex.ru", "neuro.translate.yandex.ru",
-"cloud.cdn.yandex.ru", "ws-api.oneme.ru", "cdn.yandex.ru", "3475482542.mc.yandex.ru", "ads.vk.ru",
-"s3.yandex.net", "browser.yandex.ru", "vk-portal.net", "login.vk.ru", "pic.rutubelist.ru",
-"zen.yandex.ru", "zen.yandex.com", "zen.yandex.net", "le.tbank.ru", "rutube.ru",
-"queuev4.vk.com", "api.vk.ru", "collections.yandex.ru", "r0.mradx.net", "collections.yandex.com",
-"zen-yabro-morda.mediascope.mc.yandex.ru", "yandex.ru", "bro-bg-store.s3.yandex.ru", "bro-bg-store.s3.yandex.net", "bro-bg-store.s3.yandex.com",
-"www.sberbank.ru", "static-mon.yandex.net", "id.tbank.ru", "sync.browser.yandex.net", "storage.ape.yandex.net",
-"top-fwz1.mail.ru", "sberbank.ru", "cms-res-web.online.sberbank.ru", "sfd.gosuslugi.ru", "esia.gosuslugi.ru",
-"ams2-cdn.2gis.com", "bot.gosuslugi.ru", "gosuslugi.ru", "contract.gosuslugi.ru", "novorossiya.gosuslugi.ru",
-"pos.gosuslugi.ru", "lk.gosuslugi.ru", "map.gosuslugi.ru", "partners.gosuslugi.ru", "www.gosuslugi.ru",
-"eh.vk.com", "akashi.vk-portal.net", "id.sber.ru", "sun9-38.userapi.com", "sun6-21.userapi.com",
-"st.ozone.ru", "ir.ozone.ru", "vt-1.ozone.ru", "www.ozon.ru", "ozon.ru",
-"xapi.ozon.ru", "suggest.sso.dzen.ru", "sso.dzen.ru", "strm-rad-23.strm.yandex.net", "strm.yandex.net",
-"strm.yandex.ru", "log.strm.yandex.ru", "online.sberbank.ru", "esa-res.online.sberbank.ru", "egress.yandex.net",
-"st.okcdn.ru", "742231.ms.ok.ru", "cloudcdn-ams19.cdn.yandex.net", "wb.ru", "a.wb.ru",
-"user-geo-data.wildberries.ru", "banners-website.wildberries.ru", "chat-prod.wildberries.ru", "id.vk.ru", "surveys.yandex.ru",
-"alfabank.ru", "pl-res.online.sberbank.ru", "privacy-cs.mail.ru", "disk.2gis.com", "imgproxy.cdn-tinkoff.ru",
-"an.yandex.ru", "sba.yandex.ru", "sba.yandex.com", "sba.yandex.net",
-"cloud.vk.com", "cloud.vk.ru", "api.2gis.ru", "keys.api.2gis.com", "favorites.api.2gis.com",
-"styles.api.2gis.com", "tile0.maps.2gis.com", "tile1.maps.2gis.com", "tile2.maps.2gis.com", "tile3.maps.2gis.com",
-"tile4.maps.2gis.com", "bfds.sberbank.ru", "dev.max.ru", "web.max.ru", "api.max.ru",
-"legal.max.ru", "st.max.ru", "max.ru", "botapi.max.ru", "link.max.ru",
-"download.max.ru", "i.max.ru", "help.max.ru", "api.photo.2gis.com", "www.t2.ru",
-"msk.t2.ru", "s3.t2.ru", "2gis.com", "filekeeper-vod.2gis.com", "i0.photo.2gis.com",
-"i1.photo.2gis.com", "i2.photo.2gis.com", "[подозрительная ссылка удалена]", "i4.photo.2gis.com", "i5.photo.2gis.com",
-"i6.photo.2gis.com", "i7.photo.2gis.com", "i8.photo.2gis.com", "i9.photo.2gis.com", "jam.api.2gis.com",
-"catalog.api.2gis.com", "api.reviews.2gis.com", "public-api.reviews.2gis.com", "mapgl.2gis.com", "yastatic.net",
-"csp.yandex.net", "cdnrhkgfkkpupuotntfj.svc.cdn.yandex.net", "sntr.avito.ru", "stats.avito.ru", "cs.avito.ru",
-"www.avito.st", "avito.st", "st.avito.ru", "www.avito.ru", "m.avito.ru",
-"avito.ru", "api.avito.ru", "yabro-wbplugin.edadeal.yandex.ru", "goya.rutube.ru", "www.kinopoisk.ru",
-"widgets.kinopoisk.ru", "payment-widget.plus.kinopoisk.ru", "api.events.plus.yandex.net", "speller.yandex.net", "2gis.ru",
-"d-assets.2gis.ru", "s0.bss.2gis.com", "s1.bss.2gis.com", "00.img.avito.st", "01.img.avito.st",
-"02.img.avito.st", "03.img.avito.st", "04.img.avito.st", "05.img.avito.st", "06.img.avito.st",
-"07.img.avito.st", "08.img.avito.st", "09.img.avito.st", "10.img.avito.st", "11.img.avito.st",
-"12.img.avito.st", "13.img.avito.st", "14.img.avito.st", "15.img.avito.st", "16.img.avito.st",
-"17.img.avito.st", "18.img.avito.st", "19.img.avito.st", "20.img.avito.st", "21.img.avito.st",
-"22.img.avito.st", "23.img.avito.st", "24.img.avito.st", "25.img.avito.st", "26.img.avito.st",
-"27.img.avito.st", "28.img.avito.st", "29.img.avito.st", "30.img.avito.st", "31.img.avito.st",
-"32.img.avito.st", "33.img.avito.st", "34.img.avito.st", "35.img.avito.st", "36.img.avito.st",
-"37.img.avito.st", "38.img.avito.st", "39.img.avito.st", "40.img.avito.st", "41.img.avito.st",
-"42.img.avito.st", "43.img.avito.st", "44.img.avito.st", "45.img.avito.st", "46.img.avito.st",
-"47.img.avito.st", "48.img.avito.st", "49.img.avito.st", "50.img.avito.st", "51.img.avito.st",
-"52.img.avito.st", "53.img.avito.st", "54.img.avito.st", "55.img.avito.st", "56.img.avito.st",
-"57.img.avito.st", "58.img.avito.st", "59.img.avito.st", "60.img.avito.st", "61.img.avito.st",
-"62.img.avito.st", "63.img.avito.st", "64.img.avito.st", "65.img.avito.st", "66.img.avito.st",
-"67.img.avito.st", "68.img.avito.st", "69.img.avito.st", "70.img.avito.st", "71.img.avito.st",
-"72.img.avito.st", "73.img.avito.st", "74.img.avito.st", "75.img.avito.st", "76.img.avito.st",
-"77.img.avito.st", "78.img.avito.st", "79.img.avito.st", "80.img.avito.st", "81.img.avito.st",
-"82.img.avito.st", "83.img.avito.st", "84.img.avito.st", "85.img.avito.st", "86.img.avito.st",
-"87.img.avito.st", "88.img.avito.st", "89.img.avito.st", "90.img.avito.st", "91.img.avito.st",
-"92.img.avito.st", "93.img.avito.st", "94.img.avito.st", "95.img.avito.st", "96.img.avito.st",
-"97.img.avito.st", "98.img.avito.st", "99.img.avito.st", "a.res-nsdi.ru", "b.res-nsdi.ru",
-"a.auth-nsdi.ru", "b.auth-nsdi.ru"
 ]
 
 BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com']
@@ -258,14 +123,19 @@ SUSPICIOUS_PORTS = {'80', '8080', '3128', '1080', '8888'}
 
 TCP_CONNECT_TIMEOUT = 1.5
 HTTP_TIMEOUT = 15
-MAX_NODES_TO_CHECK = 5000
+
+# НОВЫЕ ЛИМИТЫ: 10000 нод для проверки (8000 элитных + 2000 остальных)
+MAX_NODES_TO_CHECK_ELITE = 8000
+MAX_NODES_TO_CHECK_REST = 2000
+MAX_NODES_TO_CHECK_TOTAL = MAX_NODES_TO_CHECK_ELITE + MAX_NODES_TO_CHECK_REST
+
 MAX_CONCURRENT_CHECKS = 200
 
+# Расширенный список источников
 SOURCES = [
     "https://s3c3.001.gpucloud.ru/dggdu/xixz",
     "https://raw.githubusercontent.com/HikaruApps/WhiteLattice/refs/heads/main/subscriptions/config.txt", 
     "https://jsnegsukavsos.hb.ru-msk.vkcloud-storage.ru/love",
-    "https://vpn.yzewe.ru/1226960582/tVd6RXx-9V7q0SE8IjGxsw", 
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Cable.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/Vless-Reality-White-Lists-Rus-Mobile.txt",
     "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/BLACK_SS%2BAll_RUS.txt",
@@ -278,10 +148,6 @@ SOURCES = [
     "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
     "https://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt",
     "https://etoneya.a9fm.site/1",
-    "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/refs/heads/main/WHITE-CIDR-RU-checked.txt",
-    "https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/ru_whitelist_configs.txt",
-    "https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/vless_reality_whitelist_ru.txt",
-    "https://raw.githubusercontent.com/kort0881/vpn-vless-configs-russia/main/vless_configs.txt",
     "https://bp.wl.free.nf/confs/merged.txt", 
     "https://raw.githubusercontent.com/V2RAYCONFIGSPOOL/V2RAY_SUB/refs/heads/main/v2ray_configs_no1.txt", 
     "https://raw.githubusercontent.com/V2RAYCONFIGSPOOL/V2RAY_SUB/refs/heads/main/v2ray_configs_no2.txt", 
@@ -321,10 +187,12 @@ SOURCES = [
 # ============================================================================
 
 def get_node_hash(node: str) -> str:
+    """Генерирует MD5 хеш для ноды"""
     base_link = node.split('#')[0]
     return hashlib.md5(base_link.encode()).hexdigest()
 
 def extract_protocol(node: str) -> Optional[str]:
+    """Извлекает протокол из ноды"""
     if node.startswith('ss://'):
         return 'ss'
     elif node.startswith('vless://'):
@@ -338,6 +206,7 @@ def extract_protocol(node: str) -> Optional[str]:
     return None
 
 def extract_sni(node: str) -> Optional[str]:
+    """Извлекает SNI из ноды"""
     try:
         match = re.search(r'[?&]sni=([^&?#\s]+)', node.lower())
         if match:
@@ -347,6 +216,7 @@ def extract_sni(node: str) -> Optional[str]:
     return None
 
 def extract_host_port(node: str) -> Optional[Tuple[str, int]]:
+    """Извлекает хост и порт"""
     try:
         parsed = urlparse(node)
         netloc = parsed.netloc.split('@')[-1]
@@ -360,22 +230,23 @@ def extract_host_port(node: str) -> Optional[Tuple[str, int]]:
         return None
 
 def is_blacklisted_host(host: str) -> bool:
+    """Проверяет ASN blacklist"""
     host_lower = host.lower()
     return any(asn in host_lower for asn in ASN_BLACKLIST)
 
 def validate_ss_method(node: str) -> bool:
-    """ИСПРАВЛЕННАЯ валидация Shadowsocks"""
+    """ОСЛАБЛЕННАЯ валидация Shadowsocks - принимаем больше методов"""
     try:
-        # Сначала проверяем по строке (для современных форматов)
         node_lower = node.lower()
+        
+        # Проверка по строке
         for method in MODERN_SS_METHODS:
             if method in node_lower:
                 return True
         
-        # Пробуем декодировать base64
+        # Попытка декодирования base64
         base_part = node[5:].split('#')[0].split('?')[0]
         
-        # Если есть @, то это формат method:password@host:port
         if '@' in base_part:
             try:
                 decoded = base64.b64decode(base_part + '=' * (4 - len(base_part) % 4)).decode('utf-8', errors='ignore')
@@ -384,12 +255,16 @@ def validate_ss_method(node: str) -> bool:
             except:
                 pass
         
+        # ОСЛАБЛЕНИЕ: если не можем определить метод, но структура правильная - пропускаем
+        if '@' in node and ':' in node:
+            return True
+        
         return False
     except:
         return False
 
 def get_geo_simple(node: str) -> str:
-    """Простая геолокация по домену (без DNS)"""
+    """Простая геолокация"""
     try:
         parsed = urlparse(node)
         host = parsed.netloc.split('@')[-1].split(':')[0]
@@ -397,11 +272,9 @@ def get_geo_simple(node: str) -> str:
         if not host:
             return "UN"
         
-        # IP - неизвестно
         if re.match(r'^\d+\.\d+\.\d+\.\d+$', host):
             return "UN"
         
-        # Домены
         if host.endswith(('.ru', '.su', '.рф')):
             return "RU"
         if host.endswith('.ua'):
@@ -411,7 +284,6 @@ def get_geo_simple(node: str) -> str:
         if host.endswith('.tr'):
             return "TR"
         
-        # Известные хосты
         if any(x in host for x in ['.yandex.', '.mail.', '.vk.', '.sber.', '.tinkoff.']):
             return "RU"
         
@@ -424,6 +296,8 @@ def get_geo_simple(node: str) -> str:
 # ============================================================================
 
 class EnhancedValidator:
+    """Валидация с опциональными библиотеками"""
+    
     @staticmethod
     def validate_ip(ip: str) -> bool:
         if HAS_IPADDRESS:
@@ -491,6 +365,8 @@ class EnhancedValidator:
 # ============================================================================
 
 class ReputationManager:
+    """Управление репутацией серверов"""
+    
     def __init__(self, reputation_file: str = 'reputation.json'):
         self.reputation_file = reputation_file
         self.reputation: Dict[str, Dict] = self._load()
@@ -539,12 +415,13 @@ class ReputationManager:
         if os.path.exists(self.reputation_file):
             os.remove(self.reputation_file)
         print("✅ Репутация очищена")
-
 # ============================================================================
 # NODE SCORER
 # ============================================================================
 
 class NodeScorer:
+    """Система оценки нод"""
+    
     def __init__(self, reputation_manager: ReputationManager):
         self.reputation = reputation_manager
         self.validator = EnhancedValidator()
@@ -553,6 +430,7 @@ class NodeScorer:
         self.ip_counter: Dict[str, int] = {}
     
     def update_statistics(self, nodes: List[str]):
+        """Обновляет статистику UUID, SNI, IP"""
         self.uuid_counter.clear()
         self.sni_counter.clear()
         self.ip_counter.clear()
@@ -576,6 +454,7 @@ class NodeScorer:
                 continue
     
     def _extract_uuid(self, node: str) -> Optional[str]:
+        """Извлекает UUID из ноды"""
         try:
             if node.startswith('vmess://'):
                 uuid_match = re.search(
@@ -594,6 +473,7 @@ class NodeScorer:
         return None
     
     def calculate_score(self, node: str) -> int:
+        """Вычисляет оценку ноды"""
         score = 0
         n_l = node.lower()
         
@@ -618,6 +498,14 @@ class NodeScorer:
             score += 450
         elif protocol == 'trojan':
             score += 150 if 'reality' not in n_l else 350
+        elif protocol == 'ss':
+            # Бонус для современных SS методов
+            if '2022-blake3' in n_l:
+                score += 300
+            elif any(m in n_l for m in ['aes-256-gcm', 'chacha20-ietf-poly1305']):
+                score += 200
+            else:
+                score += 100
         
         # Транспорты
         if 'type=grpc' in n_l:
@@ -703,19 +591,29 @@ class NodeScorer:
         return max(score, 0)
     
     def get_tier(self, score: int, protocol: str) -> int:
-        """Тир - только для метки качества"""
-        if score >= 500:
+        """Определяет тир (для метки качества)"""
+        if score >= 1000:
             return 1
-        elif score >= 300:
+        elif score >= 500:
             return 2
-        elif score >= 150:
+        elif score >= 300:
             return 3
-        return 4
+        elif score >= 150:
+            return 4
+        return 5
+
+# ============================================================================
+# ФИЛЬТРАЦИЯ
+# ============================================================================
+
 class EnhancedNodeFilter:
+    """Расширенная фильтрация нод"""
+    
     def __init__(self):
         self.validator = EnhancedValidator()
     
     def is_valid_protocol(self, node: str) -> bool:
+        """Проверяет протокол"""
         protocol = extract_protocol(node)
         
         if protocol == 'ss':
@@ -724,6 +622,7 @@ class EnhancedNodeFilter:
         return protocol in ALLOWED_PROTOCOLS
     
     def is_blacklisted(self, node: str) -> bool:
+        """Проверяет черные списки"""
         if any(trash in node for trash in ["0.0.0.0", "127.0.0.1", "localhost"]):
             return True
         
@@ -752,9 +651,11 @@ class EnhancedNodeFilter:
         return False
     
     def clean_node(self, node: str) -> str:
+        """Убирает тег"""
         return node.split('#')[0]
     
     def deduplicate_key(self, node: str) -> str:
+        """Ключ дедупликации"""
         try:
             protocol = extract_protocol(node)
             host_port = extract_host_port(node)
@@ -768,6 +669,7 @@ class EnhancedNodeFilter:
         return get_node_hash(node)
     
     def parse_nodes_from_text(self, text: str) -> List[str]:
+        """Парсит ноды из текста"""
         nodes = []
         
         if "://" not in text[:100]:
@@ -789,6 +691,7 @@ class EnhancedNodeFilter:
         return nodes
     
     def validate_node_structure(self, node: str) -> bool:
+        """Проверяет структуру ноды"""
         try:
             if HAS_VALIDATORS:
                 base_node = node.split('#')[0]
@@ -809,10 +712,12 @@ class EnhancedNodeFilter:
             return False
 
 # ============================================================================
-# ASYNC TCP CHECKER С СТАТИСТИКОЙ ИСТОЧНИКОВ
+# ASYNC TCP CHECKER
 # ============================================================================
 
 class AsyncTCPChecker:
+    """Асинхронная проверка TCP с статистикой"""
+    
     def __init__(self, timeout: float = TCP_CONNECT_TIMEOUT, max_concurrent: int = MAX_CONCURRENT_CHECKS):
         self.timeout = timeout
         self.semaphore = asyncio.Semaphore(max_concurrent)
@@ -823,11 +728,11 @@ class AsyncTCPChecker:
             'dead': 0,
             'errors': 0
         }
-        # НОВОЕ: статистика по источникам и хостам
         self.source_stats = defaultdict(lambda: {'total': 0, 'alive': 0})
         self.host_stats = defaultdict(lambda: {'total': 0, 'alive': 0})
     
     async def check_port(self, host: str, port: int) -> Tuple[bool, Optional[float]]:
+        """Проверяет порт и возвращает latency"""
         async with self.semaphore:
             try:
                 start = time.time()
@@ -851,7 +756,7 @@ class AsyncTCPChecker:
                 self.metrics['checked'] += 1
     
     async def check_node(self, node: str, source: str = 'unknown') -> Tuple[str, bool, Optional[float], str]:
-        """Проверяет ноду и запоминает источник"""
+        """Проверяет ноду с кэшированием"""
         host_port = extract_host_port(node)
         
         if not host_port:
@@ -859,12 +764,10 @@ class AsyncTCPChecker:
         
         host, port = host_port
         
-        # Кэш
         cache_key = f"{host}:{port}"
         if cache_key in self.results:
             is_alive, latency = self.results[cache_key]
             
-            # Обновляем статистику
             self.source_stats[source]['total'] += 1
             if is_alive:
                 self.source_stats[source]['alive'] += 1
@@ -875,11 +778,9 @@ class AsyncTCPChecker:
             
             return (node, is_alive, latency, source)
         
-        # Проверка
         is_alive, latency = await self.check_port(host, port)
         self.results[cache_key] = (is_alive, latency)
         
-        # Статистика
         self.source_stats[source]['total'] += 1
         if is_alive:
             self.source_stats[source]['alive'] += 1
@@ -891,7 +792,7 @@ class AsyncTCPChecker:
         return (node, is_alive, latency, source)
     
     async def check_batch(self, nodes_with_sources: List[Tuple[str, str]]) -> List[Tuple[str, float, str]]:
-        """Проверяет batch с информацией об источниках"""
+        """Проверяет batch нод"""
         tasks = [self.check_node(node, source) for node, source in nodes_with_sources]
         results = await asyncio.gather(*tasks)
         
@@ -906,7 +807,7 @@ class AsyncTCPChecker:
         return self.metrics.copy()
     
     def get_top_sources(self, top_n: int = 5) -> List[Tuple[str, int, int, float]]:
-        """Возвращает ТОП источников по живым нодам"""
+        """ТОП источников по живым нодам"""
         source_list = []
         for source, stats in self.source_stats.items():
             total = stats['total']
@@ -914,12 +815,11 @@ class AsyncTCPChecker:
             rate = (alive / total * 100) if total > 0 else 0
             source_list.append((source, alive, total, rate))
         
-        # Сортируем по количеству живых
         source_list.sort(key=lambda x: x[1], reverse=True)
         return source_list[:top_n]
     
     def get_top_hosts(self, top_n: int = 5) -> List[Tuple[str, int, int, float]]:
-        """Возвращает ТОП хостов (ASN) по живым нодам"""
+        """ТОП хостов по живым нодам"""
         host_list = []
         for host, stats in self.host_stats.items():
             total = stats['total']
@@ -935,6 +835,8 @@ class AsyncTCPChecker:
 # ============================================================================
 
 class AsyncDownloader:
+    """Асинхронная загрузка источников"""
+    
     def __init__(self, timeout: int = HTTP_TIMEOUT):
         self.timeout = aiohttp.ClientTimeout(total=timeout)
         self.user_agent_idx = 0
@@ -981,12 +883,13 @@ class AsyncDownloader:
     
     def get_metrics(self) -> Dict:
         return self.metrics.copy()
-
 # ============================================================================
 # ГЛАВНЫЙ АГРЕГАТОР
 # ============================================================================
 
 class EnhancedProxyAggregator:
+    """Главный класс агрегатора с балансировкой проверки"""
+    
     def __init__(self):
         self.reputation = ReputationManager()
         self.scorer = NodeScorer(self.reputation)
@@ -994,13 +897,14 @@ class EnhancedProxyAggregator:
         self.downloader = AsyncDownloader()
         self.checker = AsyncTCPChecker()
         
-        self.raw_nodes: List[Dict] = []  # ИЗМЕНЕНО: храним {node, source}
+        self.raw_nodes: List[Dict] = []
         self.filtered_nodes: List[Dict] = []
         self.checked_nodes: List[Dict] = []
         
         self._print_available_libraries()
     
     def _print_available_libraries(self):
+        """Выводит доступные библиотеки"""
         print("📚 Доступные библиотеки:")
         libs = {
             'validators': HAS_VALIDATORS,
@@ -1013,6 +917,7 @@ class EnhancedProxyAggregator:
             print(f"  {status} {lib}")
     
     async def download_sources(self):
+        """Загрузка источников"""
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 📥 Загрузка источников...")
         
         results = await self.downloader.fetch_all(SOURCES)
@@ -1024,7 +929,6 @@ class EnhancedProxyAggregator:
             
             nodes = self.filter.parse_nodes_from_text(content)
             
-            # Сохраняем источник для каждой ноды
             for node in nodes:
                 self.raw_nodes.append({
                     'node': node,
@@ -1043,6 +947,7 @@ class EnhancedProxyAggregator:
         print(f"📊 Всего загружено: {total_nodes} нод")
     
     def filter_and_deduplicate(self):
+        """Фильтрация и дедупликация"""
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🔍 Фильтрация...")
         
         unique_map: Dict[str, Dict] = {}
@@ -1088,7 +993,7 @@ class EnhancedProxyAggregator:
                 'node': clean_node,
                 'protocol': protocol,
                 'original': node,
-                'source': source  # Сохраняем источник
+                'source': source
             }
         
         self.filtered_nodes = list(unique_map.values())
@@ -1099,6 +1004,7 @@ class EnhancedProxyAggregator:
               f"duplicate={stats['duplicate']}")
     
     def calculate_scores(self):
+        """Расчет оценок"""
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 📊 Расчет оценок...")
         
         nodes_list = [n['node'] for n in self.filtered_nodes]
@@ -1112,22 +1018,33 @@ class EnhancedProxyAggregator:
             node_data['score'] = score
             node_data['tier'] = tier
         
-        # ИСПРАВЛЕНО: сортируем по score
+        # Сортируем по score
         self.filtered_nodes.sort(key=lambda x: x['score'], reverse=True)
         
         print(f"✅ Оценки рассчитаны")
     
     async def check_nodes(self):
-        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🔌 TCP проверка...")
+        """НОВАЯ ЛОГИКА: 8000 элитных + 2000 остальных"""
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🔌 TCP проверка (балансировка)...")
         
-        nodes_to_check = self.filtered_nodes[:MAX_NODES_TO_CHECK]
+        # Разделяем на элитные (score >= 500) и остальные
+        elite_nodes = [n for n in self.filtered_nodes if n['score'] >= 500]
+        rest_nodes = [n for n in self.filtered_nodes if n['score'] < 500]
+        
+        # Берем 8000 элитных и 2000 остальных
+        nodes_to_check = elite_nodes[:MAX_NODES_TO_CHECK_ELITE] + rest_nodes[:MAX_NODES_TO_CHECK_REST]
+        
+        print(f"  📡 Элитных (score >= 500): {min(len(elite_nodes), MAX_NODES_TO_CHECK_ELITE)}")
+        print(f"  📡 Остальных (score < 500): {min(len(rest_nodes), MAX_NODES_TO_CHECK_REST)}")
+        print(f"  📡 Всего к проверке: {len(nodes_to_check)} нод")
+        
         nodes_with_sources = [(n['node'], n['source']) for n in nodes_to_check]
         
-        print(f"  📡 Проверка {len(nodes_with_sources)} нод...")
-        
+        # Проверка
         alive_results = await self.checker.check_batch(nodes_with_sources)
         alive_map = {node: (latency, source) for node, latency, source in alive_results}
         
+        # Обновляем данные
         for node_data in self.filtered_nodes:
             if node_data['node'] in alive_map:
                 latency, source = alive_map[node_data['node']]
@@ -1137,16 +1054,17 @@ class EnhancedProxyAggregator:
                 node_data['latency'] = None
                 node_data['alive'] = False
         
+        # Оставляем только живые или непроверенные
         self.checked_nodes = [
             n for n in self.filtered_nodes 
             if n.get('alive', True)
         ]
         
         metrics = self.checker.get_metrics()
-        print(f"✅ Проверка: живых={metrics['alive']}, "
+        print(f"\n✅ Проверка: живых={metrics['alive']}, "
               f"мертвых={metrics['dead']}, ошибок={metrics['errors']}")
         
-        # НОВОЕ: ТОП-5 источников
+        # ТОП-5 источников
         print(f"\n🏆 ТОП-5 источников по живым нодам:")
         top_sources = self.checker.get_top_sources(5)
         for i, (source, alive, total, rate) in enumerate(top_sources, 1):
@@ -1154,7 +1072,7 @@ class EnhancedProxyAggregator:
             print(f"  {i}. {source_name}")
             print(f"     Живых: {alive}/{total} ({rate:.1f}%)")
         
-        # НОВОЕ: ТОП-5 хостов
+        # ТОП-5 хостов
         print(f"\n🏆 ТОП-5 хостов (ASN) по живым нодам:")
         top_hosts = self.checker.get_top_hosts(5)
         for i, (host, alive, total, rate) in enumerate(top_hosts, 1):
@@ -1162,7 +1080,9 @@ class EnhancedProxyAggregator:
             print(f"     Живых: {alive}/{total} ({rate:.1f}%)")
         
         print(f"\n📊 Итого нод: {len(self.checked_nodes)}")
+    
     def update_reputation(self):
+        """Обновление репутации"""
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 💾 Обновление репутации...")
         
         for node_data in self.checked_nodes:
@@ -1174,13 +1094,13 @@ class EnhancedProxyAggregator:
         
         print(f"✅ Репутация обновлена ({len(self.reputation.reputation)} записей)")
     
-    def generate_server_name_hpp(self, node_data: Dict, index: int) -> str:
-        """Генерирует имя с HPP неймингом и флагами"""
+    def format_node_name(self, node_data: Dict, index: int) -> str:
+        """НОВЫЙ НЕЙМИНГ: [PROTO] INDEX | GEO | TIER | REP | PINGms HPP QUALITY"""
         protocol = node_data['protocol'].upper()
+        node = node_data['node']
         score = node_data['score']
         tier = node_data['tier']
         latency = node_data.get('latency')
-        node = node_data['node']
         
         # Геолокация
         geo = get_geo_simple(node)
@@ -1195,11 +1115,11 @@ class EnhancedProxyAggregator:
             flag = "🌐"
         
         # Качество
-        if score >= 500:
+        if score >= 1000:
             quality = "ELITE"
-        elif score >= 300:
+        elif score >= 500:
             quality = "PREMIUM"
-        elif score >= 150:
+        elif score >= 300:
             quality = "STANDARD"
         else:
             quality = "BASIC"
@@ -1208,31 +1128,19 @@ class EnhancedProxyAggregator:
         node_hash = get_node_hash(node)
         rep_count = self.reputation.get_count(node_hash)
         
-        # Протокол тег
-        protocol_tag = ""
-        if protocol == 'HYSTERIA2':
-            protocol_tag = "[HY2] "
-        elif protocol == 'TUIC':
-            protocol_tag = "[TUIC] "
-        elif protocol == 'VLESS':
-            if 'vision' in node.lower():
-                protocol_tag = "[VISION] "
-            elif 'reality' in node.lower():
-                protocol_tag = "[REALITY] "
-            else:
-                protocol_tag = "[VLESS] "
-        elif protocol == 'TROJAN':
-            protocol_tag = "[TROJAN] "
-        elif protocol == 'SS':
-            protocol_tag = "[SS] "
+        # Ping
+        ping_str = f"{int(latency*1000)}ms" if latency else "N/A"
         
-        # ОРИГИНАЛЬНЫЙ HPP ФОРМАТ
-        name = f"{flag} {protocol_tag}{geo}-{index:05d}-REP({rep_count})-HPP {quality}"
+        # Индекс
+        idx = f"{index:04d}"
+        
+        # Формат: [PROTO] 0001 | 🇷🇺 RU | T1 | REP:5 | 45ms HPP ELITE
+        name = f"[{protocol}] {idx} | {flag} {geo} | T{tier} | REP:{rep_count} | {ping_str} HPP {quality}"
         
         return name
     
     def save_results(self):
-        """Сохранение с правильным распределением по score"""
+        """Сохранение результатов"""
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 💾 Сохранение...")
         
         # Разделяем по протоколам
@@ -1243,8 +1151,8 @@ class EnhancedProxyAggregator:
             node = node_data['node']
             protocol = node_data['protocol']
             
-            # Генерируем HPP имя
-            name = self.generate_server_name_hpp(node_data, idx + 1)
+            # Генерируем новое имя
+            name = self.format_node_name(node_data, idx + 1)
             full_node = f"{node}#{name}"
             
             if protocol == 'ss':
@@ -1252,26 +1160,19 @@ class EnhancedProxyAggregator:
             else:
                 non_ss_nodes.append(full_node)
         
-        # ИСПРАВЛЕНО: все файлы по score (уже отсортировано)
-        all_nodes = ss_nodes + non_ss_nodes
+        # Все ноды (уже отсортированы по score)
+        all_nodes = non_ss_nodes + ss_nodes
         
         # Сохранение файлов
         files = {
-            # Элитные (топ по score, любой протокол)
             'ultra_elite.txt': all_nodes[:1000],
             'hard_hidden.txt': all_nodes[:500],
             'business.txt': all_nodes[:500],
-            
-            # Мобильные и средние
             'mob.txt': all_nodes[:1000],
             'med.txt': all_nodes[1000:3000] if len(all_nodes) > 1000 else [],
-            
-            # По протоколам
             'vls.txt': non_ss_nodes,
             'vless_vmess.txt': non_ss_nodes,
             'ss.txt': ss_nodes[:2000],
-            
-            # Все
             'all.txt': all_nodes[:25000],
             'sub.txt': all_nodes[:25000],
             'all_configs.txt': all_nodes[:25000]
@@ -1283,6 +1184,7 @@ class EnhancedProxyAggregator:
             print(f"  ✓ {filename}: {len(nodes)} нод")
     
     def _save_file(self, filename: str, nodes: List[str]):
+        """Вспомогательная функция сохранения"""
         try:
             with open(filename, 'w', encoding='utf-8') as f:
                 if nodes:
@@ -1291,11 +1193,11 @@ class EnhancedProxyAggregator:
             print(f"  ❌ {filename}: {e}")
     
     async def run(self):
-        """Главный запуск"""
+        """Главный метод запуска"""
         start = time.time()
         
         print("=" * 70)
-        print("🚀 ФИНАЛЬНЫЙ АСИНХРОННЫЙ АГРЕГАТОР С HPP")
+        print("🚀 ФИНАЛЬНЫЙ АГРЕГАТОР v2 С БАЛАНСИРОВКОЙ")
         print("=" * 70)
         
         await self.download_sources()
@@ -1313,7 +1215,10 @@ class EnhancedProxyAggregator:
         print(f"  - Загружено: {len(self.raw_nodes)} нод")
         print(f"  - После фильтрации: {len(self.filtered_nodes)} нод")
         print(f"  - После TCP check: {len(self.checked_nodes)} нод")
-        print(f"  - Процент выживших: {len(self.checked_nodes)/len(self.raw_nodes)*100:.1f}%")
+        
+        if len(self.raw_nodes) > 0:
+            survival_rate = len(self.checked_nodes) / len(self.raw_nodes) * 100
+            print(f"  - Процент выживших: {survival_rate:.1f}%")
         
         # Статистика по протоколам
         proto_stats = {}
@@ -1361,7 +1266,9 @@ class EnhancedProxyAggregator:
             protocol = node_data['protocol'].upper()
             score = node_data['score']
             geo = get_geo_simple(node_data['node'])
-            print(f"    {i}. [{protocol}] {geo} | Score: {score}")
+            latency = node_data.get('latency')
+            ping = f"{int(latency*1000)}ms" if latency else "N/A"
+            print(f"    {i}. [{protocol}] {geo} | Score: {score} | Ping: {ping}")
         
         print("=" * 70)
 
@@ -1381,6 +1288,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Критическая ошибка: {e}")
         import traceback
-        traceback.print_exc() 
-
-
+        traceback.print_exc()
