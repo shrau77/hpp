@@ -148,6 +148,7 @@ SOURCES = [
     "https://raw.githubusercontent.com/vlesscollector/vlesscollector/refs/heads/main/vless_configs.txt",
     "https://fsub.flux.2bd.net/githubmirror/bypass/bypass-all.txt",
     "https://etoneya.a9fm.site/1",
+    "https://raw.githubusercontent.com/whoahaow/rjsxrd/refs/heads/main/githubmirror/bypass/bypass-all.txt", 
     "https://raw.githubusercontent.com/LowiKLive/BypassWhitelistRu/main/WhiteList-Bypass_Ru.txt", 
     "https://wlr.s3-website.cloud.ru/zNhbYZtBc", 
     "https://bp.wl.free.nf/confs/merged.txt", 
@@ -1291,5 +1292,6 @@ if __name__ == "__main__":
         print(f"\n❌ Критическая ошибка: {e}")
         import traceback
         traceback.print_exc()
+
 
 
