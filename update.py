@@ -113,158 +113,55 @@ TARGET_SNI = [
     "speller.yandex.net", "widgets.cbonds.ru", "www.magnit.com", "magnit-ru.injector.3ebra.net",
     "jsons.injector.3ebra.net", "2gis.ru", "d-assets.2gis.ru", "s1.bss.2gis.com",
     "www.tbank.ru", "strm-spbmiran-08.strm.yandex.net", "id.tbank.ru", "tmsg.tbank.ru",
-    "vk.com", "www.wildberries.ru", "www.ozon.ru", "ok.ru", "yandex.ru"
+    "vk.com", "www.wildberries.ru", "www.ozon.ru", "ok.ru", "yandex.ru",
     "epp.genproc.gov.ru", "duma.gov.ru", "alfabank.ru", "pochta.ru", "честныйзнак.рф",
-"moskva.taximaxim.ru", "2gis.ru", "tutu.ru", "rzd.ru", "rambler.ru",
-"lenta.ru", "gazeta.ru", "rbc.ru", "kp.ru", "government.ru",
-"kremlin.ru", "sun6-22.userapi.com", "pptest.userapi.com", "sun9-101.userapi.com", "travel.yandex.ru",
-"trk.mail.ru", "1l-api.mail.ru", "m.47news.ru", "crowdtest.payment-widget-smarttv.plus.tst.kinopoisk.ru", "external-api.mediabilling.kinopoisk.ru",
-"external-api.plus.kinopoisk.ru", "graphql-web.kinopoisk.ru", "graphql.kinopoisk.ru", "1l.mail.ru", "tickets.widget.kinopoisk.ru",
-"st.kinopoisk.ru", "quiz.kinopoisk.ru", "payment-widget.kinopoisk.ru", "payment-widget-smarttv.plus.kinopoisk.ru", "oneclick-payment.kinopoisk.ru",
-"microapps.kinopoisk.ru", "ma.kinopoisk.ru", "hd.kinopoisk.ru", "crowdtest.payment-widget.plus.tst.kinopoisk.ru", "api.plus.kinopoisk.ru",
-"st-im.kinopoisk.ru", "1l-s2s.mail.ru", "sso.kinopoisk.ru", "touch.kinopoisk.ru", "1l-view.mail.ru",
-"1link.mail.ru", "1l-hit.mail.ru", "2021.mail.ru", "2018.mail.ru", "23feb.mail.ru",
-"2019.mail.ru", "2020.mail.ru", "1l-go.mail.ru", "8mar.mail.ru", "9may.mail.ru",
-"aa.mail.ru", "8march.mail.ru", "afisha.mail.ru", "agent.mail.ru", "amigo.mail.ru",
-"analytics.predict.mail.ru", "alpha4.minigames.mail.ru", "alpha3.minigames.mail.ru", "answer.mail.ru", "api.predict.mail.ru",
-"answers.mail.ru", "authdl.mail.ru", "av.mail.ru", "apps.research.mail.ru", "auto.mail.ru",
-"bb.mail.ru", "bender.mail.ru", "beko.dom.mail.ru", "azt.mail.ru", "bd.mail.ru",
-"autodiscover.corp.mail.ru", "aw.mail.ru", "beta.mail.ru", "biz.mail.ru", "blackfriday.mail.ru",
-"bitva.mail.ru", "blog.mail.ru", "bratva-mr.mail.ru", "browser.mail.ru", "calendar.mail.ru",
-"capsula.mail.ru", "cloud.mail.ru", "cdn.newyear.mail.ru", "cars.mail.ru", "code.mail.ru",
-"cobmo.mail.ru", "cobma.mail.ru", "cog.mail.ru", "cdn.connect.mail.ru", "cf.mail.ru",
-"comba.mail.ru", "compute.mail.ru", "codefest.mail.ru", "combu.mail.ru", "corp.mail.ru",
-"commba.mail.ru", "crazypanda.mail.ru", "ctlog.mail.ru", "cpg.money.mail.ru", "ctlog2023.mail.ru",
-"ctlog2024.mail.ru", "cto.mail.ru", "cups.mail.ru", "da.biz.mail.ru", "da-preprod.biz.mail.ru",
-"data.amigo.mail.ru", "dk.mail.ru", "dev1.mail.ru", "dev3.mail.ru", "dl.mail.ru",
-"deti.mail.ru", "dn.mail.ru", "dl.marusia.mail.ru", "doc.mail.ru", "dragonpals.mail.ru",
-"dom.mail.ru", "duck.mail.ru", "dev2.mail.ru", "e.mail.ru", "ds.mail.ru",
-"education.mail.ru", "dobro.mail.ru", "esc.predict.mail.ru", "et.mail.ru", "fe.mail.ru",
-"finance.mail.ru", "five.predict.mail.ru", "foto.mail.ru", "games-bamboo.mail.ru", "games-fisheye.mail.ru",
-"games.mail.ru", "genesis.mail.ru", "geo-apart.predict.mail.ru", "golos.mail.ru", "go.mail.ru",
-"gpb.finance.mail.ru", "gibdd.mail.ru", "health.mail.ru", "guns.mail.ru", "horo.mail.ru",
-"hs.mail.ru", "help.mcs.mail.ru", "imperia.mail.ru", "it.mail.ru", "internet.mail.ru",
-"infra.mail.ru", "hi-tech.mail.ru", "jd.mail.ru", "journey.mail.ru", "junior.mail.ru",
-"juggermobile.mail.ru", "kicker.mail.ru", "knights.mail.ru", "kino.mail.ru", "kingdomrift.mail.ru",
-"kobmo.mail.ru", "komba.mail.ru", "kobma.mail.ru", "kommba.mail.ru", "kombo.mail.ru",
-"kz.mcs.mail.ru", "konflikt.mail.ru", "kombu.mail.ru", "lady.mail.ru", "landing.mail.ru",
-"la.mail.ru", "legendofheroes.mail.ru", "legenda.mail.ru", "loa.mail.ru", "love.mail.ru",
-"lotro.mail.ru", "mailer.mail.ru", "mailexpress.mail.ru", "man.mail.ru", "maps.mail.ru",
-"marusia.mail.ru", "mcs.mail.ru", "media-golos.mail.ru", "mediapro.mail.ru", "merch-cpg.money.mail.ru",
-"miniapp.internal.myteam.mail.ru", "media.mail.ru", "mobfarm.mail.ru", "mowar.mail.ru", "mozilla.mail.ru",
-"my.mail.ru", "mosqa.mail.ru", "mking.mail.ru", "minigames.mail.ru", "myteam.mail.ru",
-"nebogame.mail.ru", "money.mail.ru", "net.mail.ru", "new.mail.ru", "newyear2018.mail.ru",
-"news.mail.ru", "newyear.mail.ru", "nonstandard.sales.mail.ru", "notes.mail.ru", "octavius.mail.ru",
-"operator.mail.ru", "otvety.mail.ru", "otvet.mail.ru", "otveti.mail.ru", "panzar.mail.ru",
-"park.mail.ru", "pernatsk.mail.ru", "pay.mail.ru", "pets.mail.ru", "pms.mail.ru",
-"pochtabank.mail.ru", "pokerist.mail.ru", "pogoda.mail.ru", "polis.mail.ru", "predict.mail.ru",
-"primeworld.mail.ru", "pp.mail.ru", "ptd.predict.mail.ru", "public.infra.mail.ru", "pulse.mail.ru",
-"pubg.mail.ru", "quantum.mail.ru", "rate.mail.ru", "pw.mail.ru", "rebus.calls.mail.ru",
-"rebus.octavius.mail.ru", "rev.mail.ru", "rl.mail.ru", "rm.mail.ru", "riot.mail.ru",
-"reseach.mail.ru", "s3.babel.mail.ru", "rt.api.operator.mail.ru", "s3.mail.ru", "s3.media-mobs.mail.ru",
-"sales.mail.ru", "sangels.mail.ru", "sdk.money.mail.ru", "service.amigo.mail.ru", "security.mail.ru",
-"shadowbound.mail.ru", "socdwar.mail.ru", "sochi-park.predict.mail.ru", "souz.mail.ru", "sphere.mail.ru",
-"staging-analytics.predict.mail.ru", "staging-sochi-park.predict.mail.ru", "staging-esc.predict.mail.ru", "stand.bb.mail.ru", "sport.mail.ru",
-"stand.aoc.mail.ru", "stand.cb.mail.ru", "startrek.mail.ru", "static.dl.mail.ru", "stand.pw.mail.ru",
-"stand.la.mail.ru", "stormriders.mail.ru", "static.operator.mail.ru", "stream.mail.ru", "status.mcs.mail.ru",
-"street-combats.mail.ru", "support.biz.mail.ru", "support.mcs.mail.ru", "team.mail.ru", "support.tech.mail.ru",
-"tech.mail.ru", "tera.mail.ru", "tiles.maps.mail.ru", "todo.mail.ru", "tidaltrek.mail.ru",
-"tmgame.mail.ru", "townwars.mail.ru", "tv.mail.ru", "ttbh.mail.ru", "typewriter.mail.ru",
-"u.corp.mail.ru", "ufo.mail.ru", "vkdoc.mail.ru", "vk.mail.ru", "voina.mail.ru",
-"warface.mail.ru", "wartune.mail.ru", "weblink.predict.mail.ru", "warheaven.mail.ru", "welcome.mail.ru",
-"webstore.mail.ru", "webagent.mail.ru", "wf.mail.ru", "whatsnew.mail.ru", "wh-cpg.money.mail.ru",
-"wok.mail.ru", "www.biz.mail.ru", "wos.mail.ru", "www.mail.ru", "www.pubg.mail.ru",
-"www.wf.mail.ru", "www.mcs.mail.ru", "informer.yandex.ru", "digital.gov.ru", "adm.digital.gov.ru",
-"travel.yastatic.net", "api.uxfeedback.yandex.net", "api.s3.yandex.net", "cdn.s3.yandex.net", "uxfeedback-cdn.s3.yandex.net",
-"uxfeedback.yandex.ru", "cloudcdn-m9-15.cdn.yandex.net", "cloudcdn-m9-14.cdn.yandex.net", "cloudcdn-m9-13.cdn.yandex.net", "cloudcdn-m9-12.cdn.yandex.net",
-"cloudcdn-m9-10.cdn.yandex.net", "cloudcdn-m9-9.cdn.yandex.net", "cloudcdn-m9-7.cdn.yandex.net", "cloudcdn-m9-6.cdn.yandex.net", "cloudcdn-m9-5.cdn.yandex.net",
-"cloudcdn-m9-4.cdn.yandex.net", "cloudcdn-m9-3.cdn.yandex.net", "cloudcdn-m9-2.cdn.yandex.net", "admin.cs7777.vk.ru", "admin.tau.vk.ru",
-"analytics.vk.ru", "api.cs7777.vk.ru", "owa.ozon.ru", "learning.ozon.ru", "mapi.learning.ozon.ru",
-"ws.seller.ozon.ru", "bank.ozon.ru", "www.cikrf.ru", "izbirkom.ru", "seller.ozon.ru",
-"pay.ozon.ru", "securepay.ozon.ru", "adv.ozon.ru", "voter.gosuslugi.ru", "gosweb.gosuslugi.ru",
-"invest.ozon.ru", "ord.ozon.ru", "autodiscover.ord.ozon.ru", "api.tau.vk.ru", "fw.wb.ru",
-"finance.wb.ru", "jitsi.wb.ru", "dnd.wb.ru", "live.ok.ru", "m.ok.ru",
-"api.ok.ru", "multitest.ok.ru", "dating.ok.ru", "tamtam.ok.ru", "away.cs7777.vk.ru",
-"away.tau.vk.ru", "business.vk.ru", "connect.cs7777.vk.ru", "cs7777.vk.ru", "dev.cs7777.vk.ru",
-"dev.tau.vk.ru", "expert.vk.ru", "id.cs7777.vk.ru", "id.tau.vk.ru", "login.cs7777.vk.ru",
-"login.tau.vk.ru", "m.cs7777.vk.ru", "m.tau.vk.ru", "m.vk.ru", "m.vkvideo.cs7777.vk.ru",
-"me.cs7777.vk.ru", "ms.cs7777.vk.ru", "music.vk.ru", "oauth.cs7777.vk.ru", "oauth.tau.vk.ru",
-"oauth2.cs7777.vk.ru", "ord.vk.ru", "push.vk.ru", "r.vk.ru", "target.vk.ru",
-"tech.vk.ru", "ui.cs7777.vk.ru", "ui.tau.vk.ru", "vkvideo.cs7777.vk.ru", "stats.vk-portal.net",
-"mediafeeds.yandex.ru", "cdn.tbank.ru", "uslugi.yandex.ru", "auto.ru", "http-check-headers.yandex.ru",
-"sso.auto.ru", "hrc.tbank.ru", "static.rutube.ru", "kiks.yandex.ru", "cobrowsing.tbank.ru",
-"sun6-20.userapi.com", "ssp.rutube.ru", "preview.rutube.ru", "st-ok.cdn-vk.ru", "ekmp-a-51.rzd.ru",
-"mp.rzd.ru", "pulse.mp.rzd.ru", "link.mp.rzd.ru", "adm.mp.rzd.ru", "welcome.rzd.ru",
-"travel.rzd.ru", "secure-cloud.rzd.ru", "secure.rzd.ru", "market.rzd.ru", "ticket.rzd.ru",
-"my.rzd.ru", "prodvizhenie.rzd.ru", "disk.rzd.ru", "rzd.ru", "www.rzd.ru",
-"team.rzd.ru", "contacts.rzd.ru", "cargo.rzd.ru", "company.rzd.ru", "avatars.mds.yandex.net",
-"mc.yandex.ru", "www.vtb.ru", "chat3.vtb.ru", "s.vtb.ru", "sso-app4.vtb.ru",
-"sso-app5.vtb.ru", "cdn.lemanapro.ru", "dmp.dmpkit.lemanapro.ru", "receive-sentry.lmru.tech", "partners.lemanapro.ru",
-"metrics.alfabank.ru", "static.lemanapro.ru", "lemanapro.ru", "frontend.vh.yandex.ru", "yandex.net",
-"favicon.yandex.ru", "favicon.yandex.com", "favicon.yandex.net", "gu-st.ru", "browser.yandex.com",
-"api.browser.yandex.com", "wap.yandex.com", "kiks.yandex.com", "rs.mail.ru", "yandex.com",
-"mediafeeds.yandex.com", "avatars.mds.yandex.com", "mc.yandex.com", "api-maps.yandex.ru", "enterprise.api-maps.yandex.ru",
-"dzen.ru", "300.ya.ru", "ya.ru", "brontp-pre.yandex.ru", "suggest.dzen.ru",
-"dr2.yandex.net", "cloud.cdn.yandex.net", "api.browser.yandex.ru", "wap.yandex.ru", "cloud.cdn.yandex.com",
-"dr.yandex.net", "mail.yandex.ru", "mail.yandex.com", "yabs.yandex.ru", "neuro.translate.yandex.ru",
-"cloud.cdn.yandex.ru", "ws-api.oneme.ru", "cdn.yandex.ru", "3475482542.mc.yandex.ru", "ads.vk.ru",
-"s3.yandex.net", "browser.yandex.ru", "vk-portal.net", "login.vk.ru", "pic.rutubelist.ru",
-"zen.yandex.ru", "zen.yandex.com", "zen.yandex.net", "le.tbank.ru", "rutube.ru",
-"queuev4.vk.com", "api.vk.ru", "collections.yandex.ru", "r0.mradx.net", "collections.yandex.com",
-"zen-yabro-morda.mediascope.mc.yandex.ru", "yandex.ru", "bro-bg-store.s3.yandex.ru", "bro-bg-store.s3.yandex.net", "bro-bg-store.s3.yandex.com",
-"www.sberbank.ru", "static-mon.yandex.net", "id.tbank.ru", "sync.browser.yandex.net", "storage.ape.yandex.net",
-"top-fwz1.mail.ru", "sberbank.ru", "cms-res-web.online.sberbank.ru", "sfd.gosuslugi.ru", "esia.gosuslugi.ru",
-"ams2-cdn.2gis.com", "bot.gosuslugi.ru", "gosuslugi.ru", "contract.gosuslugi.ru", "novorossiya.gosuslugi.ru",
-"pos.gosuslugi.ru", "lk.gosuslugi.ru", "map.gosuslugi.ru", "partners.gosuslugi.ru", "www.gosuslugi.ru",
-"eh.vk.com", "akashi.vk-portal.net", "id.sber.ru", "sun9-38.userapi.com", "sun6-21.userapi.com",
-"st.ozone.ru", "ir.ozone.ru", "vt-1.ozone.ru", "www.ozon.ru", "ozon.ru",
-"xapi.ozon.ru", "suggest.sso.dzen.ru", "sso.dzen.ru", "strm-rad-23.strm.yandex.net", "strm.yandex.net",
-"strm.yandex.ru", "log.strm.yandex.ru", "online.sberbank.ru", "esa-res.online.sberbank.ru", "egress.yandex.net",
-"st.okcdn.ru", "742231.ms.ok.ru", "cloudcdn-ams19.cdn.yandex.net", "wb.ru", "a.wb.ru",
-"user-geo-data.wildberries.ru", "banners-website.wildberries.ru", "chat-prod.wildberries.ru", "id.vk.ru", "surveys.yandex.ru",
-"alfabank.ru", "pl-res.online.sberbank.ru", "privacy-cs.mail.ru", "disk.2gis.com", "imgproxy.cdn-tinkoff.ru",
-"an.yandex.ru", "sba.yandex.ru", "sba.yandex.com", "sba.yandex.net",
-"cloud.vk.com", "cloud.vk.ru", "api.2gis.ru", "keys.api.2gis.com", "favorites.api.2gis.com",
-"styles.api.2gis.com", "tile0.maps.2gis.com", "tile1.maps.2gis.com", "tile2.maps.2gis.com", "tile3.maps.2gis.com",
-"tile4.maps.2gis.com", "bfds.sberbank.ru", "dev.max.ru", "web.max.ru", "api.max.ru",
-"legal.max.ru", "st.max.ru", "max.ru", "botapi.max.ru", "link.max.ru",
-"download.max.ru", "i.max.ru", "help.max.ru", "api.photo.2gis.com", "www.t2.ru",
-"msk.t2.ru", "s3.t2.ru", "2gis.com", "filekeeper-vod.2gis.com", "i0.photo.2gis.com",
-"i1.photo.2gis.com", "i2.photo.2gis.com", "[подозрительная ссылка удалена]", "i4.photo.2gis.com", "i5.photo.2gis.com",
-"i6.photo.2gis.com", "i7.photo.2gis.com", "i8.photo.2gis.com", "i9.photo.2gis.com", "jam.api.2gis.com",
-"catalog.api.2gis.com", "api.reviews.2gis.com", "public-api.reviews.2gis.com", "mapgl.2gis.com", "yastatic.net",
-"csp.yandex.net", "cdnrhkgfkkpupuotntfj.svc.cdn.yandex.net", "sntr.avito.ru", "stats.avito.ru", "cs.avito.ru",
-"www.avito.st", "avito.st", "st.avito.ru", "www.avito.ru", "m.avito.ru",
-"avito.ru", "api.avito.ru", "yabro-wbplugin.edadeal.yandex.ru", "goya.rutube.ru", "www.kinopoisk.ru",
-"widgets.kinopoisk.ru", "payment-widget.plus.kinopoisk.ru", "api.events.plus.yandex.net", "speller.yandex.net", "2gis.ru",
-"d-assets.2gis.ru", "s0.bss.2gis.com", "s1.bss.2gis.com", "00.img.avito.st", "01.img.avito.st",
-"02.img.avito.st", "03.img.avito.st", "04.img.avito.st", "05.img.avito.st", "06.img.avito.st",
-"07.img.avito.st", "08.img.avito.st", "09.img.avito.st", "10.img.avito.st", "11.img.avito.st",
-"12.img.avito.st", "13.img.avito.st", "14.img.avito.st", "15.img.avito.st", "16.img.avito.st",
-"17.img.avito.st", "18.img.avito.st", "19.img.avito.st", "20.img.avito.st", "21.img.avito.st",
-"22.img.avito.st", "23.img.avito.st", "24.img.avito.st", "25.img.avito.st", "26.img.avito.st",
-"27.img.avito.st", "28.img.avito.st", "29.img.avito.st", "30.img.avito.st", "31.img.avito.st",
-"32.img.avito.st", "33.img.avito.st", "34.img.avito.st", "35.img.avito.st", "36.img.avito.st",
-"37.img.avito.st", "38.img.avito.st", "39.img.avito.st", "40.img.avito.st", "41.img.avito.st",
-"42.img.avito.st", "43.img.avito.st", "44.img.avito.st", "45.img.avito.st", "46.img.avito.st",
-"47.img.avito.st", "48.img.avito.st", "49.img.avito.st", "50.img.avito.st", "51.img.avito.st",
-"52.img.avito.st", "53.img.avito.st", "54.img.avito.st", "55.img.avito.st", "56.img.avito.st",
-"57.img.avito.st", "58.img.avito.st", "59.img.avito.st", "60.img.avito.st", "61.img.avito.st",
-"62.img.avito.st", "63.img.avito.st", "64.img.avito.st", "65.img.avito.st", "66.img.avito.st",
-"67.img.avito.st", "68.img.avito.st", "69.img.avito.st", "70.img.avito.st", "71.img.avito.st",
-"72.img.avito.st", "73.img.avito.st", "74.img.avito.st", "75.img.avito.st", "76.img.avito.st",
-"77.img.avito.st", "78.img.avito.st", "79.img.avito.st", "80.img.avito.st", "81.img.avito.st",
-"82.img.avito.st", "83.img.avito.st", "84.img.avito.st", "85.img.avito.st", "86.img.avito.st",
-"87.img.avito.st", "88.img.avito.st", "89.img.avito.st", "90.img.avito.st", "91.img.avito.st",
-"92.img.avito.st", "93.img.avito.st", "94.img.avito.st", "95.img.avito.st", "96.img.avito.st",
-"97.img.avito.st", "98.img.avito.st", "99.img.avito.st", "a.res-nsdi.ru", "b.res-nsdi.ru",
-"a.auth-nsdi.ru", "b.auth-nsdi.ru"
+    "moskva.taximaxim.ru", "2gis.ru", "tutu.ru", "rzd.ru", "rambler.ru",
+    "lenta.ru", "gazeta.ru", "rbc.ru", "kp.ru", "government.ru",
+    "kremlin.ru", "sun6-22.userapi.com", "pptest.userapi.com", "sun9-101.userapi.com", "travel.yandex.ru",
+    "trk.mail.ru", "1l-api.mail.ru", "m.47news.ru", "crowdtest.payment-widget-smarttv.plus.tst.kinopoisk.ru", "external-api.mediabilling.kinopoisk.ru",
+    "external-api.plus.kinopoisk.ru", "graphql-web.kinopoisk.ru", "graphql.kinopoisk.ru", "1l.mail.ru", "tickets.widget.kinopoisk.ru",
+    "st.kinopoisk.ru", "quiz.kinopoisk.ru", "payment-widget.kinopoisk.ru", "payment-widget-smarttv.plus.kinopoisk.ru", "oneclick-payment.kinopoisk.ru",
+    "microapps.kinopoisk.ru", "ma.kinopoisk.ru", "hd.kinopoisk.ru", "crowdtest.payment-widget.plus.tst.kinopoisk.ru", "api.plus.kinopoisk.ru",
+    "st-im.kinopoisk.ru", "1l-s2s.mail.ru", "sso.kinopoisk.ru", "touch.kinopoisk.ru", "1l-view.mail.ru",
+    "1link.mail.ru", "1l-hit.mail.ru", "2021.mail.ru", "2018.mail.ru", "23feb.mail.ru",
+    "2019.mail.ru", "2020.mail.ru", "1l-go.mail.ru", "8mar.mail.ru", "9may.mail.ru",
+    "aa.mail.ru", "8march.mail.ru", "afisha.mail.ru", "agent.mail.ru", "amigo.mail.ru",
+    "analytics.predict.mail.ru", "alpha4.minigames.mail.ru", "alpha3.minigames.mail.ru", "answer.mail.ru", "api.predict.mail.ru",
+    "answers.mail.ru", "authdl.mail.ru", "av.mail.ru", "apps.research.mail.ru", "auto.mail.ru",
+    "bb.mail.ru", "bender.mail.ru", "beko.dom.mail.ru", "azt.mail.ru", "bd.mail.ru",
+    "autodiscover.corp.mail.ru", "aw.mail.ru", "beta.mail.ru", "biz.mail.ru", "blackfriday.mail.ru",
+    "bitva.mail.ru", "blog.mail.ru", "bratva-mr.mail.ru", "browser.mail.ru", "calendar.mail.ru",
+    "capsula.mail.ru", "cloud.mail.ru", "cdn.newyear.mail.ru", "cars.mail.ru", "code.mail.ru",
+    "cobmo.mail.ru", "cobma.mail.ru", "cog.mail.ru", "cdn.connect.mail.ru", "cf.mail.ru",
+    "comba.mail.ru", "compute.mail.ru", "codefest.mail.ru", "combu.mail.ru", "corp.mail.ru",
+    "commba.mail.ru", "crazypanda.mail.ru", "ctlog.mail.ru", "cpg.money.mail.ru", "ctlog2023.mail.ru",
+    "ctlog2024.mail.ru", "cto.mail.ru", "cups.mail.ru", "da.biz.mail.ru", "da-preprod.biz.mail.ru",
+    "data.amigo.mail.ru", "dk.mail.ru", "dev1.mail.ru", "dev3.mail.ru", "dl.mail.ru",
+    "deti.mail.ru", "dn.mail.ru", "dl.marusia.mail.ru", "doc.mail.ru", "dragonpals.mail.ru",
+    "dom.mail.ru", "duck.mail.ru", "dev2.mail.ru", "e.mail.ru", "ds.mail.ru",
+    "education.mail.ru", "dobro.mail.ru", "esc.predict.mail.ru", "et.mail.ru", "fe.mail.ru",
+    "finance.mail.ru", "five.predict.mail.ru", "foto.mail.ru", "games-bamboo.mail.ru", "games-fisheye.mail.ru",
+    "games.mail.ru", "genesis.mail.ru", "geo-apart.predict.mail.ru", "golos.mail.ru", "go.mail.ru",
+    "gpb.finance.mail.ru", "gibdd.mail.ru", "health.mail.ru", "guns.mail.ru", "horo.mail.ru",
+    "hs.mail.ru", "help.mcs.mail.ru", "imperia.mail.ru", "it.mail.ru", "internet.mail.ru",
+    "infra.mail.ru", "hi-tech.mail.ru", "jd.mail.ru", "journey.mail.ru", "junior.mail.ru",
+    "juggermobile.mail.ru", "kicker.mail.ru", "knights.mail.ru", "kino.mail.ru", "kingdomrift.mail.ru",
+    "kobmo.mail.ru", "komba.mail.ru", "kobma.mail.ru", "kommba.mail.ru", "kombo.mail.ru",
+    "kz.mcs.mail.ru", "konflikt.mail.ru", "kombu.mail.ru", "lady.mail.ru", "landing.mail.ru",
+    "la.mail.ru", "legendofheroes.mail.ru", "legenda.mail.ru", "loa.mail.ru", "love.mail.ru",
+    "lotro.mail.ru", "mailer.mail.ru", "mailexpress.mail.ru", "man.mail.ru", "maps.mail.ru",
+    "marusia.mail.ru", "mcs.mail.ru", "media-golos.mail.ru", "mediapro.mail.ru", "merch-cpg.money.mail.ru",
+    "miniapp.internal.myteam.mail.ru", "media.mail.ru", "mobfarm.mail.ru", "mowar.mail.ru", "mozilla.mail.ru",
+    "my.mail.ru", "mosqa.mail.ru", "mking.mail.ru", "minigames.mail.ru", "myteam.mail.ru",
+    "nebogame.mail.ru", "money.mail.ru", "net.mail.ru", "new.mail.ru", "newyear2018.mail.ru",
 ]
 
 BLACK_SNI = ['google.com', 'youtube.com', 'facebook.com', 'instagram.com', 'twitter.com']
 
+# ИСПРАВЛЕНО: убрали 80, 8080, 8888
+SUSPICIOUS_PORTS = {'3128', '1080'}
+
 ELITE_PORTS = {'2053', '2083', '2087', '2096', '8447', '9443', '10443', '443'}
-SUSPICIOUS_PORTS = {'80', '8080', '3128', '1080', '8888'}
 
 TCP_CONNECT_TIMEOUT = 1.5
 HTTP_TIMEOUT = 15
@@ -274,8 +171,8 @@ MAX_NODES_TO_CHECK_ELITE = 8000
 MAX_NODES_TO_CHECK_REST = 2000
 MAX_NODES_TO_CHECK_TOTAL = MAX_NODES_TO_CHECK_ELITE + MAX_NODES_TO_CHECK_REST
 
-MAX_CONCURRENT_CHECKS = 200
-
+# ИСПРАВЛЕНО: снижен с 200 до 50
+MAX_CONCURRENT_CHECKS = 50
 # Расширенный список источников
 SOURCES = [
     "https://s3c3.001.gpucloud.ru/dggdu/xixz",
@@ -303,7 +200,7 @@ SOURCES = [
     "https://bp.wl.free.nf/confs/wl.txt",
     "https://bp.wl.free.nf/confs/selected.txt",
     "https://bp.wl.free.nf/confs/merged.txt",
-    "https://raw.githubusercontent.com/FLEXIY0/matryoshka-vpn/main/configs/russia_whitelist.txt" 
+    "https://raw.githubusercontent.com/FLEXIY0/matryoshka-vpn/main/configs/russia_whitelist.txt",
     "https://storage.yandexcloud.net/nllrcn-proxy-subs/subs/main-sub.txt", 
     "https://raw.githubusercontent.com/HikaruApps/WhiteLattice/refs/heads/main/subscriptions/main-sub.txt", 
     "https://storage.yandexcloud.net/cid-vpn/whitelist.txt", 
@@ -354,10 +251,12 @@ def extract_protocol(node: str) -> Optional[str]:
         return 'tuic'
     return None
 
+# ИСПРАВЛЕНО: сохраняем оригинальный регистр SNI
 def extract_sni(node: str) -> Optional[str]:
     """Извлекает SNI из ноды"""
     try:
-        match = re.search(r'[?&]sni=([^&?#\s]+)', node.lower())
+        # Ищем case-insensitive, но возвращаем оригинал
+        match = re.search(r'[?&]sni=([^&?#\s]+)', node, re.IGNORECASE)
         if match:
             return match.group(1).strip('.')
     except:
@@ -383,8 +282,9 @@ def is_blacklisted_host(host: str) -> bool:
     host_lower = host.lower()
     return any(asn in host_lower for asn in ASN_BLACKLIST)
 
+# ИСПРАВЛЕНО: более строгая валидация SS
 def validate_ss_method(node: str) -> bool:
-    """ОСЛАБЛЕННАЯ валидация Shadowsocks - принимаем больше методов"""
+    """Валидация Shadowsocks - проверяем методы шифрования"""
     try:
         node_lower = node.lower()
         
@@ -396,21 +296,69 @@ def validate_ss_method(node: str) -> bool:
         # Попытка декодирования base64
         base_part = node[5:].split('#')[0].split('?')[0]
         
+        # Старый формат: ss://base64@host:port
         if '@' in base_part:
             try:
-                decoded = base64.b64decode(base_part + '=' * (4 - len(base_part) % 4)).decode('utf-8', errors='ignore')
+                encoded_part = base_part.split('@')[0]
+                decoded = base64.b64decode(encoded_part + '=' * (4 - len(encoded_part) % 4)).decode('utf-8', errors='ignore')
                 method = decoded.split(':')[0].lower()
                 return method in MODERN_SS_METHODS
             except:
                 pass
+        else:
+            # Новый формат SIP002: ss://base64 (всё закодировано)
+            try:
+                decoded = base64.b64decode(base_part + '=' * (4 - len(base_part) % 4)).decode('utf-8', errors='ignore')
+                if '@' in decoded:
+                    method = decoded.split(':')[0].lower()
+                    return method in MODERN_SS_METHODS
+            except:
+                pass
         
-        # ОСЛАБЛЕНИЕ: если не можем определить метод, но структура правильная - пропускаем
-        if '@' in node and ':' in node:
-            return True
-        
+        # УБРАНО: слишком мягкая проверка убита
         return False
     except:
         return False
+
+# НОВЫЕ ФУНКЦИИ: валидация VLESS параметров
+def validate_vless_reality(node: str) -> bool:
+    """Проверка обязательных параметров Reality"""
+    n_lower = node.lower()
+    
+    # Reality ТРЕБУЕТ:
+    if 'security=reality' not in n_lower:
+        return False
+    
+    # 1. Public Key (КРИТИЧНО!)
+    if 'pbk=' not in n_lower:
+        return False
+    
+    # 2. SNI (ОБЯЗАТЕЛЕН для TLS)
+    if 'sni=' not in n_lower:
+        return False
+    
+    # 3. Fingerprint (желательно, но не всегда обязателен)
+    # Оставляем опциональным
+    
+    return True
+
+def validate_vless_vision(node: str) -> bool:
+    """Проверка Vision конфига"""
+    n_lower = node.lower()
+    
+    # Vision требует точное имя flow
+    if 'flow=xtls-rprx-vision' not in n_lower:
+        return False
+    
+    # SNI обязателен для TLS
+    if 'sni=' not in n_lower:
+        return False
+    
+    # Vision несовместим с gRPC/WS
+    if any(t in n_lower for t in ['type=grpc', 'type=ws']):
+        return False
+    
+    return True
 
 def get_geo_simple(node: str) -> str:
     """Простая геолокация"""
@@ -439,8 +387,7 @@ def get_geo_simple(node: str) -> str:
         return "UN"
     except:
         return "UN"
-
-# ============================================================================
+        # ============================================================================
 # РАСШИРЕННЫЕ ВАЛИДАТОРЫ
 # ============================================================================
 
@@ -564,6 +511,7 @@ class ReputationManager:
         if os.path.exists(self.reputation_file):
             os.remove(self.reputation_file)
         print("✅ Репутация очищена")
+
 # ============================================================================
 # NODE SCORER
 # ============================================================================
@@ -750,8 +698,7 @@ class NodeScorer:
         elif score >= 150:
             return 4
         return 5
-
-# ============================================================================
+        # ============================================================================
 # ФИЛЬТРАЦИЯ
 # ============================================================================
 
@@ -762,11 +709,29 @@ class EnhancedNodeFilter:
         self.validator = EnhancedValidator()
     
     def is_valid_protocol(self, node: str) -> bool:
-        """Проверяет протокол"""
+        """ИСПРАВЛЕНО: Проверяет протокол с валидацией параметров"""
         protocol = extract_protocol(node)
         
         if protocol == 'ss':
             return validate_ss_method(node)
+        
+        if protocol == 'vless':
+            n_lower = node.lower()
+            
+            # Если заявлен Reality - проверяем обязательные параметры
+            if 'security=reality' in n_lower:
+                return validate_vless_reality(node)
+            
+            # Если заявлен Vision - проверяем обязательные параметры
+            if 'flow=xtls-rprx-vision' in n_lower:
+                return validate_vless_vision(node)
+            
+            # Обычный VLESS - минимальная проверка
+            return 'sni=' in n_lower or 'security=none' in n_lower
+        
+        if protocol == 'trojan':
+            # Trojan требует SNI для TLS
+            return 'sni=' in node.lower()
         
         return protocol in ALLOWED_PROTOCOLS
     
@@ -865,7 +830,7 @@ class EnhancedNodeFilter:
 # ============================================================================
 
 class AsyncTCPChecker:
-    """Асинхронная проверка TCP с статистикой"""
+    """ИСПРАВЛЕНО: Асинхронная проверка TCP с защитой от rate limit"""
     
     def __init__(self, timeout: float = TCP_CONNECT_TIMEOUT, max_concurrent: int = MAX_CONCURRENT_CHECKS):
         self.timeout = timeout
@@ -879,30 +844,45 @@ class AsyncTCPChecker:
         }
         self.source_stats = defaultdict(lambda: {'total': 0, 'alive': 0})
         self.host_stats = defaultdict(lambda: {'total': 0, 'alive': 0})
+        
+        # НОВОЕ: защита от rate limit
+        self.per_host_semaphores = {}  # Лимит на хост
+        self.global_delay = 0.05  # Задержка между запросами (50ms)
     
     async def check_port(self, host: str, port: int) -> Tuple[bool, Optional[float]]:
-        """Проверяет порт и возвращает latency"""
+        """ИСПРАВЛЕНО: Проверяет порт с задержками и лимитами"""
         async with self.semaphore:
-            try:
-                start = time.time()
-                conn = asyncio.open_connection(host, port)
-                reader, writer = await asyncio.wait_for(conn, timeout=self.timeout)
-                elapsed = time.time() - start
-                
-                writer.close()
-                await writer.wait_closed()
-                
-                self.metrics['alive'] += 1
-                return (True, elapsed)
+            # НОВОЕ: Глобальная задержка между запросами
+            await asyncio.sleep(self.global_delay)
             
-            except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
-                self.metrics['dead'] += 1
-                return (False, None)
-            except Exception:
-                self.metrics['errors'] += 1
-                return (False, None)
-            finally:
-                self.metrics['checked'] += 1
+            # НОВОЕ: Лимит на один хост (не более 5 одновременно)
+            if host not in self.per_host_semaphores:
+                self.per_host_semaphores[host] = asyncio.Semaphore(5)
+            
+            async with self.per_host_semaphores[host]:
+                try:
+                    start = time.time()
+                    conn = asyncio.open_connection(host, port)
+                    reader, writer = await asyncio.wait_for(conn, timeout=self.timeout)
+                    elapsed = time.time() - start
+                    
+                    try:
+                        writer.close()
+                        await writer.wait_closed()
+                    except:
+                        pass
+                    
+                    self.metrics['alive'] += 1
+                    return (True, elapsed)
+                
+                except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
+                    self.metrics['dead'] += 1
+                    return (False, None)
+                except Exception:
+                    self.metrics['errors'] += 1
+                    return (False, None)
+                finally:
+                    self.metrics['checked'] += 1
     
     async def check_node(self, node: str, source: str = 'unknown') -> Tuple[str, bool, Optional[float], str]:
         """Проверяет ноду с кэшированием"""
@@ -978,8 +958,7 @@ class AsyncTCPChecker:
         
         host_list.sort(key=lambda x: x[1], reverse=True)
         return host_list[:top_n]
-
-# ============================================================================
+        # ============================================================================
 # ASYNC DOWNLOADER
 # ============================================================================
 
@@ -1032,6 +1011,7 @@ class AsyncDownloader:
     
     def get_metrics(self) -> Dict:
         return self.metrics.copy()
+
 # ============================================================================
 # ГЛАВНЫЙ АГРЕГАТОР
 # ============================================================================
@@ -1088,7 +1068,7 @@ class EnhancedProxyAggregator:
             
             if len(nodes) > 0:
                 url_short = url.split('/')[-1][:40]
-                print(f"  ✓ {url_short}: {len(nodes)} нод")
+                print(f"  ✔ {url_short}: {len(nodes)} нод")
         
         dl_metrics = self.downloader.get_metrics()
         print(f"📊 Загрузка: успешно={dl_metrics['success']}, "
@@ -1148,7 +1128,7 @@ class EnhancedProxyAggregator:
         self.filtered_nodes = list(unique_map.values())
         
         print(f"✅ Уникальных нод: {len(self.filtered_nodes)}")
-        print(f"  📛 Отфильтровано: blacklist={stats['blacklist']}, "
+        print(f"  🔛 Отфильтровано: blacklist={stats['blacklist']}, "
               f"protocol={stats['protocol']}, structure={stats['structure']}, "
               f"duplicate={stats['duplicate']}")
     
@@ -1171,8 +1151,7 @@ class EnhancedProxyAggregator:
         self.filtered_nodes.sort(key=lambda x: x['score'], reverse=True)
         
         print(f"✅ Оценки рассчитаны")
-    
-    async def check_nodes(self):
+        async def check_nodes(self):
         """НОВАЯ ЛОГИКА: 8000 элитных + 2000 остальных"""
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🔌 TCP проверка (балансировка)...")
         
@@ -1183,9 +1162,9 @@ class EnhancedProxyAggregator:
         # Берем 8000 элитных и 2000 остальных
         nodes_to_check = elite_nodes[:MAX_NODES_TO_CHECK_ELITE] + rest_nodes[:MAX_NODES_TO_CHECK_REST]
         
-        print(f"  📡 Элитных (score >= 500): {min(len(elite_nodes), MAX_NODES_TO_CHECK_ELITE)}")
-        print(f"  📡 Остальных (score < 500): {min(len(rest_nodes), MAX_NODES_TO_CHECK_REST)}")
-        print(f"  📡 Всего к проверке: {len(nodes_to_check)} нод")
+        print(f"  🔡 Элитных (score >= 500): {min(len(elite_nodes), MAX_NODES_TO_CHECK_ELITE)}")
+        print(f"  🔡 Остальных (score < 500): {min(len(rest_nodes), MAX_NODES_TO_CHECK_REST)}")
+        print(f"  🔡 Всего к проверке: {len(nodes_to_check)} нод")
         
         nodes_with_sources = [(n['node'], n['source']) for n in nodes_to_check]
         
@@ -1330,7 +1309,7 @@ class EnhancedProxyAggregator:
         print("\n📄 Сохраненные файлы:")
         for filename, nodes in files.items():
             self._save_file(filename, nodes)
-            print(f"  ✓ {filename}: {len(nodes)} нод")
+            print(f"  ✔ {filename}: {len(nodes)} нод")
     
     def _save_file(self, filename: str, nodes: List[str]):
         """Вспомогательная функция сохранения"""
@@ -1420,8 +1399,7 @@ class EnhancedProxyAggregator:
             print(f"    {i}. [{protocol}] {geo} | Score: {score} | Ping: {ping}")
         
         print("=" * 70)
-
-# ============================================================================
+        # ============================================================================
 # ТОЧКА ВХОДА
 # ============================================================================
 
@@ -1437,9 +1415,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Критическая ошибка: {e}")
         import traceback
-        traceback.print_exc()
-
-
-
-
-
+        traceback.print_exc()  
