@@ -1151,7 +1151,7 @@ class EnhancedProxyAggregator:
         self.filtered_nodes.sort(key=lambda x: x['score'], reverse=True)
         
         print(f"✅ Оценки рассчитаны")
-        async def check_nodes(self):
+    async def check_nodes(self):
         """НОВАЯ ЛОГИКА: 8000 элитных + 2000 остальных"""
         print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 🔌 TCP проверка (балансировка)...")
         
@@ -1416,3 +1416,4 @@ if __name__ == "__main__":
         print(f"\n❌ Критическая ошибка: {e}")
         import traceback
         traceback.print_exc()  
+
