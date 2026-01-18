@@ -167,9 +167,9 @@ TCP_CONNECT_TIMEOUT = 1.5
 HTTP_TIMEOUT = 15
 
 # НОВЫЕ ЛИМИТЫ: 10000 нод для проверки (8000 элитных + 2000 остальных)
-MAX_NODES_TO_CHECK_ELITE = None
-MAX_NODES_TO_CHECK_REST = None
-MAX_NODES_TO_CHECK_TOTAL = None
+MAX_NODES_TO_CHECK_ELITE = 50000
+MAX_NODES_TO_CHECK_REST = 50000
+MAX_NODES_TO_CHECK_TOTAL = 50000
 
 # ИСПРАВЛЕНО: снижен с 200 до 50
 MAX_CONCURRENT_CHECKS = 100
@@ -1417,3 +1417,4 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc() 
  
+
