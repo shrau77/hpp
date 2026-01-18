@@ -167,12 +167,12 @@ TCP_CONNECT_TIMEOUT = 1.5
 HTTP_TIMEOUT = 15
 
 # НОВЫЕ ЛИМИТЫ: 10000 нод для проверки (8000 элитных + 2000 остальных)
-MAX_NODES_TO_CHECK_ELITE = 8000
-MAX_NODES_TO_CHECK_REST = 2000
-MAX_NODES_TO_CHECK_TOTAL = MAX_NODES_TO_CHECK_ELITE + MAX_NODES_TO_CHECK_REST
+MAX_NODES_TO_CHECK_ELITE = None
+MAX_NODES_TO_CHECK_REST = None
+MAX_NODES_TO_CHECK_TOTAL = None
 
 # ИСПРАВЛЕНО: снижен с 200 до 50
-MAX_CONCURRENT_CHECKS = 50
+MAX_CONCURRENT_CHECKS = 100
 # Расширенный список источников
 SOURCES = [
     "https://s3c3.001.gpucloud.ru/dggdu/xixz",
@@ -1160,7 +1160,7 @@ class EnhancedProxyAggregator:
         rest_nodes = [n for n in self.filtered_nodes if n['score'] < 500]
         
         # Берем 8000 элитных и 2000 остальных
-        nodes_to_check = elite_nodes[:MAX_NODES_TO_CHECK_ELITE] + rest_nodes[:MAX_NODES_TO_CHECK_REST]
+        nodes_to_check = self.filtered_nodes
         
         print(f"  🔡 Элитных (score >= 500): {min(len(elite_nodes), MAX_NODES_TO_CHECK_ELITE)}")
         print(f"  🔡 Остальных (score < 500): {min(len(rest_nodes), MAX_NODES_TO_CHECK_REST)}")
@@ -1293,17 +1293,17 @@ class EnhancedProxyAggregator:
         
         # Сохранение файлов
         files = {
-            'ultra_elite.txt': all_nodes[:1000],
-            'hard_hidden.txt': all_nodes[:500],
-            'business.txt': all_nodes[:500],
-            'mob.txt': all_nodes[:1000],
+            'ultra_elite.txt': all_nodes[:50000],
+            'hard_hidden.txt': all_nodes[:50000],
+            'business.txt': all_nodes[:50000],
+            'mob.txt': all_nodes[:50000],
             'med.txt': all_nodes[1000:3000] if len(all_nodes) > 1000 else [],
             'vls.txt': non_ss_nodes,
             'vless_vmess.txt': non_ss_nodes,
-            'ss.txt': ss_nodes[:2000],
-            'all.txt': all_nodes[:25000],
-            'sub.txt': all_nodes[:25000],
-            'all_configs.txt': all_nodes[:25000]
+            'ss.txt': ss_nodes[:20000],
+            'all.txt': all_nodes[:250000],
+            'sub.txt': all_nodes[:250000],
+            'all_configs.txt': all_nodes[:250000]
         }
         
         print("\n📄 Сохраненные файлы:")
@@ -1416,3 +1416,4 @@ if __name__ == "__main__":
         print(f"\n❌ Критическая ошибка: {e}")
         import traceback
         traceback.print_exc() 
+ 
